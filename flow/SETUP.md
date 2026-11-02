@@ -28,6 +28,7 @@ Run every command below from the `flow` folder: `cd ~/withnajla/flow`.
 
 - [ ] Sign up at supabase.com and create a project (free tier). Pick an EU region, e.g. Frankfurt, since your contributors are in the EU.
 - [ ] SQL Editor → New query → paste the **entire contents** of the one file `~/withnajla/flow/supabase/migrations/20261101000000_init.sql` (about 290 lines) → Run. To copy it: `pbcopy < ~/withnajla/flow/supabase/migrations/20261101000000_init.sql`. You should see "Success. No rows returned." Run it only once; a second run fails because the tables already exist.
+- [ ] New query → paste `~/withnajla/flow/supabase/migrations/20261102000000_service_role_grants.sql` (one statement) → Run. It's safe to run again.
 - [ ] Project Settings → Realtime: check that public channel access is allowed (the default). Hidden rows disappear live through a public broadcast.
 - [ ] Copy the Project URL, the anon/publishable key and the service role/secret key.
 
