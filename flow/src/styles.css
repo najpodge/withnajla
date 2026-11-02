@@ -209,8 +209,9 @@ mark {
 .add {
   background: none;
   border: 0;
-  padding: 6px 0;
-  min-height: 32px;
+  padding: 2px 0;
+  margin: -2px 0;
+  line-height: 20px;
   color: var(--ink-3);
   font-size: var(--fs-sm);
   font-weight: 500;
@@ -774,14 +775,14 @@ mark {
   color: var(--ink-2);
 }
 .signals li {
-  padding-left: 14px;
   position: relative;
+  line-height: 20px;
 }
 .signals li::before {
   content: '';
   position: absolute;
-  left: 2px;
-  top: 0.6em;
+  left: -11px;
+  top: 8px;
   width: 5px;
   height: 5px;
   border-radius: 50%;
@@ -799,9 +800,9 @@ mark {
 .rem {
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
-  padding: 6px 9px;
+  padding: 6px 10px;
   font-size: var(--fs-sm);
-  line-height: 1.35;
+  line-height: 20px;
   background: #fff;
 }
 .rem .badge {
@@ -892,6 +893,12 @@ mark {
 }
 .lens-row .tag {
   width: 100%;
+  /* Same box as a chip, so tag text and chip text share a line. */
+  padding: 6px var(--sp-2);
+  line-height: 20px;
+}
+.lens-body .add {
+  padding-left: 11px;
 }
 .card-foot {
   border-top: 1px solid var(--border);
@@ -945,6 +952,8 @@ mark {
   vertical-align: top;
   text-align: left;
   font-weight: inherit;
+  font-size: var(--fs-sm);
+  line-height: 20px;
   padding: 14px;
   border-top: 1px solid var(--border);
 }
@@ -954,18 +963,43 @@ mark {
 .lib tbody:nth-of-type(even) {
   background: #f7f4ee;
 }
-.lib .c-sp .add {
-  margin-top: 8px;
+.lib .sp-name {
+  line-height: 20px;
+}
+.lib .symptom {
+  margin-top: var(--sp-1);
 }
 .lib .c-rc .rc-text {
   font-weight: 500;
 }
-.lib .c-rc .add {
-  margin-top: 6px;
-}
 .lib .rems {
   flex-direction: column;
   align-items: flex-start;
+}
+/* Pull chips up by their inner padding so chip text shares the row's first line. */
+.lib .c-lens .rems {
+  margin-top: -7px;
+}
+.lib .c-lens .rems + .add {
+  margin-top: var(--sp-2);
+}
+/* Header, chip text and "+ Add" share one left edge in lens columns. */
+.lib thead tr:last-child th.h-people,
+.lib thead tr:last-child th.h-process,
+.lib thead tr:last-child th.h-tech,
+.lib .c-lens .add {
+  padding-left: 11px;
+}
+.lib .c-lens .add {
+  margin-left: 0;
+}
+.lib thead tr:last-child th.h-people,
+.lib thead tr:last-child th.h-process,
+.lib thead tr:last-child th.h-tech {
+  padding-left: 25px;
+}
+.lib thead .group-row .g-rem {
+  padding-left: 25px;
 }
 
 /* New items flash */
@@ -1429,14 +1463,13 @@ mark {
 }
 
 /* "+ Add" sits at the bottom of the column it adds to */
-.lib .c-lens .add,
-.lens-body .add {
-  margin-top: 4px;
+.lens-body .rems + .add {
+  margin-top: var(--sp-2);
 }
 .lib .add-row td {
   border-top: 1px dashed var(--border);
-  padding-top: 6px;
-  padding-bottom: 8px;
+  padding-top: var(--sp-2);
+  padding-bottom: var(--sp-3);
 }
 .lib .c-sig .signals .badge,
 .card .signals .badge {
