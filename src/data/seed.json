@@ -1,0 +1,972 @@
+{
+  "content": {
+    "title": "Getting back to flow in human–agent teams",
+    "tagline": "A library of where flow gets stuck in human–agent teams, why, and what to try.",
+    "definitions": {
+      "node": "Does the work. Has capacity.",
+      "edge": "Carries work between nodes. Has bandwidth.",
+      "source": "Where work comes in.",
+      "sink": "Where value lands: customers and the business.",
+      "output": "The work moving along the edges.",
+      "flow": "What reaches the sink."
+    },
+    "key_line": "Output is the work moving along the edges. Flow is what reaches the sink.",
+    "lenses": {
+      "people": "Skills, roles, capacity, relationships",
+      "process": "How work moves, norms, rituals, decision rights",
+      "tech": "Tools, automation, checks, guardrails"
+    },
+    "worked_example": {
+      "title": "Example: review backs up at Ana and Ben (A1)",
+      "setup": "A PM sends PRDs to two engineers, Ana and Ben. Each directs three agents. The agents open about 30 PRs a week, and Ana and Ben review all of them. Output is up; customers get about as many working features as before.",
+      "shows_up": "At Ana and Ben (a node).",
+      "root_cause": "The human ↔ agent edge sends more PRs than two people can review.",
+      "fixes": {
+        "people": "Add reviewers (rarely realistic now)",
+        "process": "Agents review agent PRs; humans review only what gets escalated",
+        "tech": "An automated check that escalates risky PRs to a human"
+      },
+      "watch": "Escaped defects, not PRs reviewed."
+    },
+    "practices": [
+      {
+        "section": "E",
+        "title": "Every agent ↔ agent edge needs a human who can see it",
+        "points": [
+          "Who can see this edge?",
+          "Who owns it?",
+          "What checks it, other than another agent?"
+        ],
+        "example": "A coding agent opens a PR, an AI reviewer approves it, and CI runs tests the coding agent also wrote."
+      },
+      {
+        "section": "F",
+        "title": "Incidents are where people now learn what the network is doing",
+        "points": [
+          "Define severity clearly (P0, P1, …)",
+          "Track incidents and link them to the changes behind them",
+          "Keep blameless postmortems"
+        ],
+        "example": "A clear severity taxonomy makes trends comparable. Escaped defect rate shows, of everything shipped, how much was wrong."
+      }
+    ],
+    "contact": {
+      "linkedin": "linkedin.com/in/najlaelmachtoub",
+      "email": "nelmachtoub@gmail.com",
+      "newsletter": "https://withnajla.substack.com/"
+    }
+  },
+  "sections": [
+    {
+      "id": "A",
+      "name": "Human nodes",
+      "description": "People on the team: their capacity, context and judgment.",
+      "signals": [
+        "↓ Review load per person",
+        "↓ After-hours work",
+        "↑ Pulse survey scores",
+        "↑ Quality of life",
+        "↑ Performance"
+      ]
+    },
+    {
+      "id": "B",
+      "name": "Agent nodes",
+      "description": "The agents doing work: what they produce and what it costs.",
+      "signals": [
+        "↓ Cost per merged change",
+        "↓ Rework on agent output",
+        "↓ Churn in agent-written code"
+      ]
+    },
+    {
+      "id": "C",
+      "name": "Human ↔ human edges",
+      "description": "Relationships between people: trust, shared context, feedback.",
+      "signals": [
+        "↓ Cross-team rework",
+        "↓ Waiting on answers from other people or teams",
+        "↑ 1:1s and feedback that actually happen"
+      ]
+    },
+    {
+      "id": "D",
+      "name": "Human ↔ agent edges",
+      "description": "Where people direct agents and review what comes back.",
+      "signals": [
+        "↓ First-pass rejection of agent work",
+        "↓ Reverts of agent changes"
+      ]
+    },
+    {
+      "id": "E",
+      "name": "Agent ↔ agent edges",
+      "description": "Agents handing work to other agents, mostly out of sight.",
+      "signals": [
+        "↑ Agent workflows with a named human owner",
+        "↑ Agent workflows with an escalation path",
+        "↓ Escaped defects from agent-only paths"
+      ]
+    },
+    {
+      "id": "F",
+      "name": "System circulation",
+      "description": "The processes, norms and pipelines that carry work through the team.",
+      "signals": [
+        "↓ Incidents (by severity)",
+        "↓ Escaped defects",
+        "↓ Change fail rate",
+        "↓ Rework rate",
+        "↓ Security vulnerabilities",
+        "↓ Review wait time",
+        "↓ Code churn and duplication",
+        "↓ Time to make a standard change"
+      ]
+    },
+    {
+      "id": "G",
+      "name": "Sink",
+      "description": "Where value lands: customers and the business.",
+      "signals": [
+        "↑ Business metrics",
+        "↑ Feature adoption"
+      ]
+    }
+  ],
+  "stuck_points": [
+    {
+      "section": "A",
+      "code": "A1",
+      "name": "Review backs up",
+      "symptom": "Review queues grow and approvals turn into “LGTM”",
+      "signals": [
+        "Time to first review",
+        "Review wait time",
+        "Review load per person",
+        "PRs merged without review",
+        "Escaped defects"
+      ],
+      "root_causes": [
+        {
+          "text": "More output arriving than reviewers can judge",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Agree as a team which changes truly need a human reviewer"
+            },
+            {
+              "lens": "process",
+              "text": "PR size limits"
+            },
+            {
+              "lens": "process",
+              "text": "Risk-tiered review: agents review agent PRs, humans review what gets escalated"
+            },
+            {
+              "lens": "tech",
+              "text": "Automated check that escalates risky PRs to a human"
+            }
+          ]
+        },
+        {
+          "text": "Too few people trusted to review",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Grow more reviewers"
+            },
+            {
+              "lens": "people",
+              "text": "Pair juniors on reviews"
+            },
+            {
+              "lens": "process",
+              "text": "Rotate review duty"
+            },
+            {
+              "lens": "tech",
+              "text": "Code owners that spread review across more people"
+            }
+          ]
+        },
+        {
+          "text": "Reviewers spend time on mechanical issues",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Agree what humans review for: intent, design, risk"
+            },
+            {
+              "lens": "process",
+              "text": "Settle style rules once, not in every review"
+            },
+            {
+              "lens": "tech",
+              "text": "AI pre-review for style and obvious defects"
+            },
+            {
+              "lens": "tech",
+              "text": "Linters and formatters in CI"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "A",
+      "code": "A2",
+      "name": "Context is stuck with one person",
+      "symptom": "Work waits; agents and humans act on partial information",
+      "signals": [
+        "Questions routed to one person",
+        "Work waiting on one person",
+        "Time for a new person to make a standard change"
+      ],
+      "root_causes": [
+        {
+          "text": "Knowledge was never written down",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Recognize documentation as real work"
+            },
+            {
+              "lens": "process",
+              "text": "Decision records"
+            },
+            {
+              "lens": "process",
+              "text": "Documentation as part of done"
+            },
+            {
+              "lens": "tech",
+              "text": "Searchable docs kept next to the code"
+            }
+          ]
+        },
+        {
+          "text": "Ownership concentrated in one person",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Rotation"
+            },
+            {
+              "lens": "people",
+              "text": "Pairing with the context holder"
+            },
+            {
+              "lens": "process",
+              "text": "At least two people per area"
+            },
+            {
+              "lens": "tech",
+              "text": "Code owners list at least two people"
+            }
+          ]
+        },
+        {
+          "text": "Agents can't reach the context",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Name an owner for each agent's context"
+            },
+            {
+              "lens": "process",
+              "text": "Update agent context files when decisions change"
+            },
+            {
+              "lens": "tech",
+              "text": "Repo-level context and rule files"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "A",
+      "code": "A3",
+      "name": "Decisions stall",
+      "symptom": "Approvals pile up at a leader",
+      "signals": [
+        "Decision wait time",
+        "Decisions that get reopened"
+      ],
+      "root_causes": [
+        {
+          "text": "Decision rights unclear or centralized",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Name a decider for each type of decision"
+            },
+            {
+              "lens": "process",
+              "text": "Decision-rights map"
+            },
+            {
+              "lens": "process",
+              "text": "Reversible vs. irreversible tiers"
+            },
+            {
+              "lens": "tech",
+              "text": "Decision log"
+            }
+          ]
+        },
+        {
+          "text": "Judgment not grown below the leader",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Delegate with coaching"
+            },
+            {
+              "lens": "process",
+              "text": "Leader reviews outcomes, not every decision"
+            },
+            {
+              "lens": "tech",
+              "text": "Decision log that records the reasoning, so others can learn it"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "A",
+      "code": "A4",
+      "name": "Capacity depletes",
+      "symptom": "Burnout; output holds briefly, then collapses",
+      "signals": [
+        "After-hours work",
+        "On-call load",
+        "Pulse survey scores"
+      ],
+      "root_causes": [
+        {
+          "text": "AI raised the pace bar with no recovery cycle",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Reset expectations"
+            },
+            {
+              "lens": "people",
+              "text": "Protect recovery time"
+            },
+            {
+              "lens": "process",
+              "text": "Explicit no-go hours"
+            },
+            {
+              "lens": "tech",
+              "text": "Quiet hours for notifications and agent pings"
+            }
+          ]
+        },
+        {
+          "text": "On-call and alert load are rising",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Spread on-call fairly and recognize it"
+            },
+            {
+              "lens": "process",
+              "text": "Sustainable rotations"
+            },
+            {
+              "lens": "tech",
+              "text": "Cut alert noise"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "A",
+      "code": "A5",
+      "name": "Accountability blurs",
+      "symptom": "People own agent output they don't understand",
+      "signals": [
+        "Incidents with an unclear owner",
+        "Reverts of changes the author couldn't explain"
+      ],
+      "root_causes": [
+        {
+          "text": "Delegation without comprehension",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Norm: the author can explain the change"
+            },
+            {
+              "lens": "process",
+              "text": "PR template asks the author for the why and the risks"
+            },
+            {
+              "lens": "tech",
+              "text": "Link each PR to the spec or agent session it came from"
+            }
+          ]
+        },
+        {
+          "text": "No ownership defined for AI-produced work",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Leaders say plainly that humans own agent output"
+            },
+            {
+              "lens": "process",
+              "text": "Explicit owner per change and per agent workflow"
+            },
+            {
+              "lens": "tech",
+              "text": "Required human-owner field on agent PRs"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "B",
+      "code": "B1",
+      "name": "Output is plausible but wrong",
+      "symptom": "Agent work looks right but isn't",
+      "signals": [
+        "First-pass rejection",
+        "Reverts",
+        "Code churn",
+        "Escaped defects"
+      ],
+      "root_causes": [
+        {
+          "text": "Thin context",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Write specs that state intent and constraints"
+            },
+            {
+              "lens": "process",
+              "text": "Definition of ready for agent tasks"
+            },
+            {
+              "lens": "tech",
+              "text": "Project context agents can read"
+            }
+          ]
+        },
+        {
+          "text": "Incoherent codebase",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Fund engineers to own coherence"
+            },
+            {
+              "lens": "process",
+              "text": "Standing tech-debt allocation"
+            },
+            {
+              "lens": "tech",
+              "text": "Architecture checks agents must pass"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "B",
+      "code": "B2",
+      "name": "Output doesn't match priorities",
+      "symptom": "Work in progress multiplies",
+      "signals": [
+        "Work in progress count",
+        "Share of shipped work tied to a roadmap outcome"
+      ],
+      "root_causes": [
+        {
+          "text": "Agents given open-ended goals",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Engineers decide what each agent works on"
+            },
+            {
+              "lens": "process",
+              "text": "Every agent task maps to a backlog item"
+            },
+            {
+              "lens": "tech",
+              "text": "Scope agents to backlog items"
+            }
+          ]
+        },
+        {
+          "text": "Priorities are unclear",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Leaders state priorities often"
+            },
+            {
+              "lens": "process",
+              "text": "WIP limits that include agent work"
+            },
+            {
+              "lens": "tech",
+              "text": "One board that shows agent and human work together"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "C",
+      "code": "C1",
+      "name": "Handoffs lose context",
+      "symptom": "Surprises at integration; cross-team rework",
+      "signals": [
+        "Cross-team rework",
+        "Integration surprises",
+        "Waiting on answers from other teams"
+      ],
+      "root_causes": [
+        {
+          "text": "People working solo with agents",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Pair on cross-team pieces"
+            },
+            {
+              "lens": "process",
+              "text": "Shared demos"
+            },
+            {
+              "lens": "process",
+              "text": "Handoff rituals"
+            },
+            {
+              "lens": "tech",
+              "text": "Shared notes on tickets and PRs that humans and agents both update"
+            }
+          ]
+        },
+        {
+          "text": "No visibility into each other's work",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Name an owner for cross-team syncs"
+            },
+            {
+              "lens": "process",
+              "text": "Short written weekly updates"
+            },
+            {
+              "lens": "tech",
+              "text": "Shared view of in-flight work"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "C",
+      "code": "C2",
+      "name": "Problems surface late",
+      "symptom": "Disagreement goes underground",
+      "signals": [
+        "Late escalations",
+        "Issues found at release",
+        "Quiet retros"
+      ],
+      "root_causes": [
+        {
+          "text": "Low trust: hard to admit “I don't understand this”",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Regular 1:1s"
+            },
+            {
+              "lens": "people",
+              "text": "Leaders model saying it first"
+            },
+            {
+              "lens": "process",
+              "text": "Blameless retros"
+            },
+            {
+              "lens": "tech",
+              "text": "Anonymous question channel"
+            }
+          ]
+        },
+        {
+          "text": "Feedback rituals were cut",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Leaders protect time for feedback"
+            },
+            {
+              "lens": "process",
+              "text": "Restore retros and feedback with intent"
+            },
+            {
+              "lens": "tech",
+              "text": "Lightweight pulse survey"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "D",
+      "code": "D1",
+      "name": "Delegation fails",
+      "symptom": "Agent work rejected on the first pass",
+      "signals": [
+        "First-pass rejection rate"
+      ],
+      "root_causes": [
+        {
+          "text": "Vague intent or specs",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Treat spec-writing as a core skill"
+            },
+            {
+              "lens": "process",
+              "text": "Definition of ready for agent tasks"
+            },
+            {
+              "lens": "tech",
+              "text": "Reusable task templates"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "D",
+      "code": "D2",
+      "name": "Work bounces back and forth",
+      "symptom": "Human and agent iterate without converging",
+      "signals": [
+        "Iterations per change",
+        "Reverts",
+        "Time per change"
+      ],
+      "root_causes": [
+        {
+          "text": "Wrong task for an agent",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Know when to stop delegating"
+            },
+            {
+              "lens": "process",
+              "text": "Time-box before changing approach"
+            },
+            {
+              "lens": "tech",
+              "text": "Track which task types agents succeed at"
+            }
+          ]
+        },
+        {
+          "text": "Weak feedback to the agent",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Show agents examples of good work"
+            },
+            {
+              "lens": "process",
+              "text": "Feed review comments back into agent context"
+            },
+            {
+              "lens": "tech",
+              "text": "Tests and examples instead of more prompting"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "E",
+      "code": "E1",
+      "name": "Failures go unnoticed",
+      "symptom": "Agent chains ship with nobody watching",
+      "signals": [
+        "Agent workflows with a named owner",
+        "Agent workflows with an escalation path",
+        "Escaped defects from agent-only paths"
+      ],
+      "root_causes": [
+        {
+          "text": "No owner",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "A named human owner per pipeline"
+            },
+            {
+              "lens": "process",
+              "text": "Review owned pipelines in regular ops reviews"
+            },
+            {
+              "lens": "tech",
+              "text": "Ownership metadata on every agent workflow"
+            }
+          ]
+        },
+        {
+          "text": "Agents verifying agents",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Decide where a human must look"
+            },
+            {
+              "lens": "process",
+              "text": "Sample agent-only changes for human review"
+            },
+            {
+              "lens": "tech",
+              "text": "Independent verification"
+            },
+            {
+              "lens": "tech",
+              "text": "Run logs someone reads"
+            }
+          ]
+        },
+        {
+          "text": "No exit to a human",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Owner reachable for pipeline escalations"
+            },
+            {
+              "lens": "process",
+              "text": "Escalation thresholds for low-confidence or high-risk work"
+            },
+            {
+              "lens": "tech",
+              "text": "Automatic escalation when checks fail or confidence is low"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "F",
+      "code": "F1",
+      "name": "Work piles up downstream",
+      "symptom": "Testing, deploy or QA becomes the bottleneck",
+      "signals": [
+        "Wait time per stage",
+        "Lead time vs. coding time"
+      ],
+      "root_causes": [
+        {
+          "text": "Upstream sped up, downstream didn't",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Shift capacity to the constraint"
+            },
+            {
+              "lens": "process",
+              "text": "Small batches"
+            },
+            {
+              "lens": "process",
+              "text": "WIP limits"
+            },
+            {
+              "lens": "tech",
+              "text": "Automate the constrained stage"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "F",
+      "code": "F2",
+      "name": "The system stops learning",
+      "symptom": "Incidents recur, defects escape, juniors stall",
+      "signals": [
+        "Incidents by severity",
+        "Repeat incidents",
+        "Postmortems completed",
+        "Escaped defects"
+      ],
+      "root_causes": [
+        {
+          "text": "Rituals cut “because AI”",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Leaders attend postmortems"
+            },
+            {
+              "lens": "process",
+              "text": "Severity taxonomy (P0, P1, …)"
+            },
+            {
+              "lens": "process",
+              "text": "Blameless postmortems"
+            },
+            {
+              "lens": "tech",
+              "text": "Incident tracker with follow-up items"
+            }
+          ]
+        },
+        {
+          "text": "Juniors supervise agents instead of learning",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Deliberate learning reps"
+            },
+            {
+              "lens": "process",
+              "text": "Some junior-owned tasks done without agents"
+            },
+            {
+              "lens": "tech",
+              "text": "Agents set to explain their changes on learning tasks"
+            }
+          ]
+        },
+        {
+          "text": "Incidents not linked to causes",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Owner for each postmortem follow-up"
+            },
+            {
+              "lens": "process",
+              "text": "Every postmortem names the change behind it"
+            },
+            {
+              "lens": "tech",
+              "text": "Incident tracking tied to changes"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "F",
+      "code": "F3",
+      "name": "Effort goes to the wrong things",
+      "symptom": "Activity is celebrated while outcomes stay flat",
+      "signals": [
+        "Share of work tied to outcomes",
+        "What gets praised in reviews and all-hands"
+      ],
+      "root_causes": [
+        {
+          "text": "Activity rewarded over outcomes",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Recognize review, maintenance and impact"
+            },
+            {
+              "lens": "process",
+              "text": "Impact-based performance criteria"
+            },
+            {
+              "lens": "tech",
+              "text": "Dashboards that lead with outcomes"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "G",
+      "code": "G1",
+      "name": "Shipped, but nothing moves",
+      "symptom": "Features ship and no metric changes",
+      "signals": [
+        "Feature adoption",
+        "Business metric per initiative"
+      ],
+      "root_causes": [
+        {
+          "text": "No success metric defined before building",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "PM and engineering agree on the metric together"
+            },
+            {
+              "lens": "process",
+              "text": "Define the metric up front"
+            },
+            {
+              "lens": "process",
+              "text": "Post-release review"
+            },
+            {
+              "lens": "tech",
+              "text": "Dashboard per initiative"
+            }
+          ]
+        },
+        {
+          "text": "Engineers far from customers",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Bring engineers closer to outcomes"
+            },
+            {
+              "lens": "process",
+              "text": "Engineers join customer calls or a support rotation"
+            },
+            {
+              "lens": "tech",
+              "text": "Share product analytics with engineers"
+            }
+          ]
+        },
+        {
+          "text": "Features not instrumented",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Name an owner for instrumentation"
+            },
+            {
+              "lens": "process",
+              "text": "Instrumentation in the definition of done"
+            },
+            {
+              "lens": "tech",
+              "text": "Instrument before launch"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

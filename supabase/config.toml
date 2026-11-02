@@ -1,0 +1,6 @@
+# Minimal Supabase CLI config. Run `supabase link --project-ref <ref>` once.
+project_id = "withnajla-flow"
+
+[functions.submit]
+# The browser calls this with the public key; Turnstile is the gate, not a JWT.
+verify_jwt = false

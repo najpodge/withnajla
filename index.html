@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Where flow gets stuck · Getting back to flow in human–agent teams</title>
+    <meta name="description" content="A library of where flow gets stuck in human–agent teams, why, and what to try. From Najla Elmachtoub's LeadDev workshop." />
+    <meta name="theme-color" content="#f3f1ec" />
+    <meta property="og:title" content="Getting back to flow in human–agent teams" />
+    <meta property="og:description" content="A library of where flow gets stuck in human–agent teams, why, and what to try." />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&display=swap" />
+  </head>
+  <body>
+    <a class="skip" href="#library">Skip to the library</a>
+
+    <header class="hero">
+      <div class="blobs" aria-hidden="true"><span class="b1"></span><span class="b2"></span><span class="b3"></span></div>
+      <div class="wrap">
+        <p class="eyebrow">From Najla Elmachtoub's LeadDev workshop</p>
+        <h1>Getting back to flow in human–agent teams</h1>
+        <p class="tagline" data-tagline></p>
+      </div>
+    </header>
+
+    <main>
+      <section class="wrap primer-wrap" aria-labelledby="primer-title">
+        <details class="primer" data-primer>
+          <summary><h2 id="primer-title">How to read the network</h2></summary>
+          <div class="primer-body" data-primer-body></div>
+        </details>
+      </section>
+
+      <section class="wrap explore" aria-label="Network map">
+        <figure class="diagram-box" data-diagram></figure>
+        <div class="side" data-side aria-live="polite"></div>
+      </section>
+
+      <div class="controls" data-controls>
+        <div class="wrap controls-inner">
+          <div class="chips" role="group" aria-label="Filter by section" data-chips></div>
+          <div class="search-row">
+            <label class="search">
+              <span class="sr-only">Search the library</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+              <input type="search" placeholder="Search stuck points, causes, fixes…" data-search autocomplete="off" />
+            </label>
+            <p class="count" data-count aria-live="polite"></p>
+          </div>
+        </div>
+      </div>
+
+      <section class="wrap library" id="library" aria-labelledby="library-title" tabindex="-1">
+        <div class="library-head">
+          <h2 id="library-title">Where flow gets stuck</h2>
+          <button type="button" class="btn add-sp" data-action="add-sp">+ Add a new stuck point</button>
+        </div>
+        <div class="demo-note" data-demo hidden>
+          Demo mode: not connected to the shared database. Ideas you add stay in this browser.
+        </div>
+        <div data-library><p class="muted">Loading the library…</p></div>
+      </section>
+
+      <section class="wrap extras" aria-label="Example and practices">
+        <div data-example></div>
+        <div class="practices">
+          <h2>Practices to borrow</h2>
+          <div class="practice-grid" data-practices></div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <div class="wrap foot-inner" data-footer></div>
+    </footer>
+
+    <button type="button" class="fab" data-action="add-sp">+ Add a stuck point</button>
+    <dialog class="sheet-dialog" data-dialog></dialog>
+    <div class="toast" role="status" aria-live="polite" data-toast></div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
