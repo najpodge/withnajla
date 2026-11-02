@@ -143,7 +143,7 @@ export function setupForms(
       const sp = store.stuckPoints.get(ctx.stuckPointId)!;
       return {
         title: 'Add a signal',
-        ctx: `<p class="k">${esc(sp.code)} · ${esc(sp.name)}</p><p class="muted">${esc(sp.symptom)}</p>`,
+        ctx: `<p class="ctx-title">${esc(sp.code)} · ${esc(sp.name)}</p><p class="muted">${esc(sp.symptom)}</p>`,
       };
     }
     if (ctx.kind === 'remediation') {
@@ -151,14 +151,14 @@ export function setupForms(
       const sp = store.stuckPoints.get(rc.stuck_point_id)!;
       return {
         title: 'Add a remediation',
-        ctx: `<p class="k">${esc(sp.code)} · ${esc(sp.name)}</p><p><span class="muted">Root cause:</span> ${esc(rc.text)}</p>`,
+        ctx: `<p class="ctx-title">${esc(sp.code)} · ${esc(sp.name)}</p><p><span class="muted">Root cause:</span> ${esc(rc.text)}</p>`,
       };
     }
     if (ctx.kind === 'root_cause') {
       const sp = store.stuckPoints.get(ctx.stuckPointId)!;
       return {
         title: 'Add a root cause',
-        ctx: `<p class="k">${esc(sp.code)} · ${esc(sp.name)}</p><p class="muted">${esc(sp.symptom)}</p>`,
+        ctx: `<p class="ctx-title">${esc(sp.code)} · ${esc(sp.name)}</p><p class="muted">${esc(sp.symptom)}</p>`,
       };
     }
     return { title: 'Add a new stuck point', ctx: '' };
