@@ -1,5 +1,7 @@
 # Setup checklist
 
+**Status (2 November 2026):** steps 1–5 are done. https://flow.withnajla.com is live on the real database, HTTPS is enforced, the `submit` Edge Function is deployed with its secrets, and the library is seeded. Still to do: the in-browser checks in step 6 and everything in step 7.
+
 Work through these in order. Steps marked **(Claude)** I can do for you once you say so; everything else needs your accounts.
 
 Keep a scratch note of the values you collect. Three are **public** (safe in the browser) and three are **secret** (never in the repo, never prefixed `VITE_`).
