@@ -2,6 +2,8 @@
 
 Companion site for the LeadDev workshop "Getting back to flow in human–agent teams". Spec: `docs/BUILD_SPEC.md`. Deck images: `reference/`.
 
+See **SETUP.md** for the step-by-step launch checklist.
+
 Stack: Vite + TypeScript (static) · Supabase (Postgres, RLS, Realtime, Edge Function `submit`) · Cloudflare Turnstile · GitHub Pages.
 
 ## Local setup
