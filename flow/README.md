@@ -14,7 +14,7 @@ Stack: Vite + TypeScript (static) · Supabase (Postgres, RLS, Realtime, Edge Fun
 Without `VITE_SUPABASE_URL` the site runs in **demo mode**: seed data in memory, contributions shared between tabs of one browser.
 
 ## Supabase (once)
-1. Create a free project. Run `supabase/migrations/20261101000000_init.sql` in the SQL editor (or `supabase link` + `supabase db push`).
+1. Create a free project. In the SQL editor, paste and run the whole of `flow/supabase/migrations/20261101000000_init.sql`, once.
 2. Create a Turnstile widget in Cloudflare (domains: flow.withnajla.com, localhost).
 3. Secrets: `supabase secrets set TURNSTILE_SECRET_KEY=... RATE_LIMIT_SALT=<random> ALLOWED_ORIGINS=https://flow.withnajla.com,http://localhost:5173`
 4. Deploy the function: `supabase functions deploy submit` (config.toml sets `verify_jwt = false`).
