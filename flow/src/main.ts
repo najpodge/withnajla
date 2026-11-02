@@ -82,7 +82,6 @@ function renderStatic() {
     </div>
     <div>
       <p class="small">Contributions are anonymous and public as soon as they're submitted, and may be shown, edited or reused by Najla Elmachtoub.</p>
-      <p class="small"><a href="/terms.html">About and terms</a></p>
     </div>`;
 }
 
@@ -175,12 +174,14 @@ function toast(msg: string) {
 }
 
 function revealNew(r: SubmitResult) {
-  const target = r.stuck_point ?? r.root_cause ?? r.remediations[0];
+  const signals = r.signals ?? [];
+  const target = r.stuck_point ?? r.root_cause ?? r.remediations[0] ?? signals[0];
   if (!target) return;
   for (const [table, rows] of [
     ['stuck_points', r.stuck_point ? [r.stuck_point] : []],
     ['root_causes', r.root_cause ? [r.root_cause] : []],
     ['remediations', r.remediations],
+    ['signals', signals],
   ] as const) {
     for (const row of rows) store.apply({ kind: 'upsert', table, row });
   }
@@ -188,13 +189,20 @@ function revealNew(r: SubmitResult) {
   const find = () => document.getElementById(`item-${target.id}`);
   if (!find()) {
     // The new item is outside the current filter or search: show its section.
-    const spId = r.stuck_point?.id ?? r.root_cause?.stuck_point_id ?? store.rootCauses.get(r.remediations[0].root_cause_id)?.stuck_point_id;
+    const spId =
+      r.stuck_point?.id ??
+      r.root_cause?.stuck_point_id ??
+      signals[0]?.stuck_point_id ??
+      store.rootCauses.get(r.remediations[0]?.root_cause_id)?.stuck_point_id;
     const sp = spId ? store.stuckPoints.get(spId) : undefined;
     filter.q = '';
     $<HTMLInputElement>('[data-search]').value = '';
     setFilter(sp?.section ?? null);
   }
   const el = find();
+  // On phones new signals sit inside a collapsed list.
+  const details = el?.closest('details');
+  if (details) details.open = true;
   el?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'center' });
   toast('Thanks! Your idea is live for everyone.');
 }
@@ -305,6 +313,9 @@ async function main() {
     switch (el.dataset.action) {
       case 'add-sp':
         ctx = { kind: 'stuck_point', section: filter.section, name: el.dataset.prefill === 'query' ? filter.q.trim().slice(0, 80) : '' };
+        break;
+      case 'add-signal':
+        ctx = { kind: 'signal', stuckPointId: el.dataset.sp! };
         break;
       case 'add-rc':
         ctx = { kind: 'root_cause', stuckPointId: el.dataset.sp! };

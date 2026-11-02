@@ -1,4 +1,4 @@
-import type { ChangeEvent, Remediation, RootCause, Section, SectionId, Snapshot, StuckPoint, TableName } from './types';
+import type { ChangeEvent, Remediation, RootCause, Section, SectionId, Signal, Snapshot, StuckPoint, TableName } from './types';
 
 /** Normalized in-memory copy of everything visible, plus "just arrived" times. */
 export class Store {
@@ -6,6 +6,7 @@ export class Store {
   stuckPoints = new Map<string, StuckPoint>();
   rootCauses = new Map<string, RootCause>();
   remediations = new Map<string, Remediation>();
+  signals = new Map<string, Signal>();
   arrivedAt = new Map<string, number>();
   private listeners: (() => void)[] = [];
 
@@ -14,6 +15,7 @@ export class Store {
     this.stuckPoints = new Map(s.stuck_points.filter((r) => !r.hidden).map((r) => [r.id, r]));
     this.rootCauses = new Map(s.root_causes.filter((r) => !r.hidden).map((r) => [r.id, r]));
     this.remediations = new Map(s.remediations.filter((r) => !r.hidden).map((r) => [r.id, r]));
+    this.signals = new Map(s.signals.filter((r) => !r.hidden).map((r) => [r.id, r]));
     this.emit();
   }
 
@@ -32,10 +34,13 @@ export class Store {
   }
 
   private mapFor(t: TableName) {
-    return (t === 'stuck_points' ? this.stuckPoints : t === 'root_causes' ? this.rootCauses : this.remediations) as Map<
-      string,
-      StuckPoint | RootCause | Remediation
-    >;
+    const maps = {
+      stuck_points: this.stuckPoints,
+      root_causes: this.rootCauses,
+      remediations: this.remediations,
+      signals: this.signals,
+    };
+    return maps[t] as Map<string, StuckPoint | RootCause | Remediation | Signal>;
   }
 
   onChange(fn: () => void) {
@@ -61,6 +66,11 @@ export class Store {
 
   rootCausesOf(spId: string): RootCause[] {
     return [...this.rootCauses.values()].filter((r) => r.stuck_point_id === spId).sort(byTime);
+  }
+
+  /** Signals added after the stuck point was created. */
+  addedSignalsOf(spId: string): Signal[] {
+    return [...this.signals.values()].filter((r) => r.stuck_point_id === spId).sort(byTime);
   }
 
   remediationsOf(rcId: string): Remediation[] {

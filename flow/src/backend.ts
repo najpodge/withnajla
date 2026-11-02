@@ -4,6 +4,7 @@ import type {
   ChangeEvent,
   Remediation,
   RootCause,
+  Signal,
   Snapshot,
   StuckPoint,
   Submission,
@@ -20,7 +21,7 @@ export interface Backend {
   submit(sub: Submission, turnstileToken: string | null): Promise<SubmitResult>;
 }
 
-const TABLES: TableName[] = ['stuck_points', 'root_causes', 'remediations'];
+const TABLES: TableName[] = ['stuck_points', 'root_causes', 'remediations', 'signals'];
 const URL_ = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
@@ -60,7 +61,7 @@ async function liveBackend(url: string, key: string): Promise<Backend> {
     needsTurnstile: true,
 
     async load() {
-      const [sections, stuck_points, root_causes, remediations] = await Promise.all([
+      const [sections, stuck_points, root_causes, remediations, signals] = await Promise.all([
         db.from('sections').select('*').order('sort').then((r) => {
           if (r.error) throw r.error;
           return r.data;
@@ -68,8 +69,10 @@ async function liveBackend(url: string, key: string): Promise<Backend> {
         all<StuckPoint>('stuck_points'),
         all<RootCause>('root_causes'),
         all<Remediation>('remediations'),
+        // Added in a later migration; the page still works without it.
+        all<Signal>('signals').catch(() => [] as Signal[]),
       ]);
-      return { sections, stuck_points, root_causes, remediations } as Snapshot;
+      return { sections, stuck_points, root_causes, remediations, signals } as Snapshot;
     },
 
     subscribe(onChange) {
@@ -136,6 +139,7 @@ function demoBackend(): Backend {
     stuck_points: [],
     root_causes: [],
     remediations: [],
+    signals: [],
   };
   for (const sp of seed.stuck_points) {
     const spId = `sp-${sp.code}`;
@@ -154,7 +158,7 @@ function demoBackend(): Backend {
     });
   }
 
-  type Stored = { table: TableName; row: StuckPoint | RootCause | Remediation };
+  type Stored = { table: TableName; row: StuckPoint | RootCause | Remediation | Signal };
   const readStored = (): Stored[] => {
     try {
       return JSON.parse(localStorage.getItem(DEMO_KEY) || '[]');
@@ -199,7 +203,20 @@ function demoBackend(): Backend {
       if (err) throw new Error(err);
       await new Promise((r) => setTimeout(r, 300));
       const now = () => new Date().toISOString();
-      const out: SubmitResult = { stuck_point: null, root_cause: null, remediations: [] };
+      const out: SubmitResult = { stuck_point: null, root_cause: null, remediations: [], signals: [] };
+      if (sub.type === 'signal') {
+        const sp = snap.stuck_points.find((s) => s.id === sub.stuck_point_id)!;
+        for (const text of sub.signals) {
+          const known = [...sp.signals, ...snap.signals.filter((s) => s.stuck_point_id === sp.id).map((s) => s.text)];
+          if (known.some((k) => k.toLowerCase() === text.toLowerCase())) throw new Error('That signal is already listed');
+          out.signals.push({ id: id(), created_at: now(), source: 'community', stuck_point_id: sp.id, text });
+        }
+        const batch: Stored[] = out.signals.map((row) => ({ table: 'signals' as const, row }));
+        batch.forEach(apply);
+        store([...readStored(), ...batch]);
+        bc?.postMessage(batch);
+        return out;
+      }
       let spId = sub.type === 'root_cause' ? sub.stuck_point_id : '';
       let rcId = sub.type === 'remediation' ? sub.root_cause_id : '';
 

@@ -10,6 +10,13 @@ export function validateSubmission(sub: Submission): string | null {
     return null;
   };
 
+  if (sub.type === 'signal') {
+    const sigs = sub.signals.map((s) => s.trim()).filter(Boolean);
+    if (!sigs.length) return 'Add at least one signal';
+    if (sigs.length > LIMITS.signals) return `At most ${LIMITS.signals} signals at a time`;
+    for (const s of sigs) if (s.length > LIMITS.signal) return `Each signal must be ${LIMITS.signal} characters or fewer`;
+    return null;
+  }
   if (sub.type === 'stuck_point') {
     if (!/^[A-G]$/.test(sub.section)) return 'Pick a section A–G';
     const e = field(sub.name, 'Name', LIMITS.name) ?? field(sub.symptom, 'Symptom', LIMITS.symptom);
@@ -34,6 +41,7 @@ export function validateSubmission(sub: Submission): string | null {
 
 /** Trim everything and drop empty signals before sending. */
 export function normalize(sub: Submission): Submission {
+  if (sub.type === 'signal') return { ...sub, signals: sub.signals.map((s) => s.trim()).filter(Boolean) };
   const remediations = sub.remediations.map((r) => ({ lens: r.lens, text: r.text.trim() }));
   if (sub.type === 'stuck_point') {
     return {

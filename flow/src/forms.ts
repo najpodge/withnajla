@@ -6,6 +6,7 @@ import { esc } from './util';
 import { normalize, validateSubmission } from './validate';
 
 export type FormContext =
+  | { kind: 'signal'; stuckPointId: string }
   | { kind: 'remediation'; rootCauseId: string; lens?: Lens }
   | { kind: 'root_cause'; stuckPointId: string }
   | { kind: 'stuck_point'; section?: SectionId | null; name?: string };
@@ -43,6 +44,20 @@ function loadTurnstile(): Promise<void> {
   return turnstileReady;
 }
 
+// Sample text shown in empty fields, drawn from the curated library.
+const SAMPLE = {
+  name: 'e.g. Review backs up',
+  symptom: 'e.g. Review queues grow and approvals turn into “LGTM”',
+  rootCause: 'e.g. More output arriving than reviewers can judge',
+  signal: 'e.g. Review wait time',
+  remediation: {
+    people: 'e.g. Pair juniors on reviews',
+    process: 'e.g. Rotate review duty',
+    tech: 'e.g. Linters and formatters in CI',
+  } as Record<Lens, string>,
+  remediationAny: 'Pick a lens, then e.g. “Rotate review duty”',
+};
+
 // ---------------------------------------------------------------------------
 // Field builders
 // ---------------------------------------------------------------------------
@@ -50,12 +65,18 @@ function loadTurnstile(): Promise<void> {
 let uid = 0;
 const nextId = (p: string) => `${p}-${++uid}`;
 
-function textField(name: string, label: string, max: number, opts: { value?: string; multiline?: boolean; hint?: string } = {}) {
+function textField(
+  name: string,
+  label: string,
+  max: number,
+  opts: { value?: string; multiline?: boolean; hint?: string; placeholder?: string } = {},
+) {
   const id = nextId(name);
   const value = esc(opts.value ?? '');
+  const ph = opts.placeholder ? ` placeholder="${esc(opts.placeholder)}"` : '';
   const input = opts.multiline
-    ? `<textarea id="${id}" name="${name}" rows="2" maxlength="${max + 20}" data-max="${max}" aria-describedby="${id}-c" required>${value}</textarea>`
-    : `<input id="${id}" name="${name}" type="text" maxlength="${max + 20}" data-max="${max}" value="${value}" aria-describedby="${id}-c" autocomplete="off" required>`;
+    ? `<textarea id="${id}" name="${name}" rows="2" maxlength="${max + 20}" data-max="${max}" aria-describedby="${id}-c"${ph} required>${value}</textarea>`
+    : `<input id="${id}" name="${name}" type="text" maxlength="${max + 20}" data-max="${max}" value="${value}" aria-describedby="${id}-c"${ph} autocomplete="off" required>`;
   return `<div class="field">
     <div class="field-top"><label for="${id}">${label}</label><span class="counter" id="${id}-c">0 / ${max}</span></div>
     ${opts.hint ? `<p class="hint">${opts.hint}</p>` : ''}
@@ -72,7 +93,10 @@ function remRow(n: number, lens?: Lens) {
         (l) => `<label class="tag tag-${l} pick"><input type="radio" name="${id}-lens" value="${l}" ${l === lens ? 'checked' : ''} required><span>${LENS_LABEL[l]}</span></label>`,
       ).join('')}
     </div>
-    ${textField(`${id}-text`, 'What to try', LIMITS.text, { multiline: true })}
+    ${textField(`${id}-text`, 'What to try', LIMITS.text, {
+      multiline: true,
+      placeholder: lens ? SAMPLE.remediation[lens] : SAMPLE.remediationAny,
+    })}
     <button type="button" class="link remove" data-remove>Remove</button>
   </fieldset>`;
 }
@@ -81,7 +105,7 @@ function signalRow(value = '') {
   const id = nextId('sig');
   return `<div class="signal-row" data-signal>
     <label class="sr-only" for="${id}">Signal</label>
-    <input id="${id}" type="text" maxlength="${LIMITS.signal + 20}" data-max="${LIMITS.signal}" value="${esc(value)}" placeholder="e.g. Review wait time" autocomplete="off">
+    <input id="${id}" type="text" maxlength="${LIMITS.signal + 20}" data-max="${LIMITS.signal}" value="${esc(value)}" placeholder="${esc(SAMPLE.signal)}" autocomplete="off">
     <button type="button" class="link remove" data-remove-signal aria-label="Remove signal">Remove</button>
   </div>`;
 }
@@ -115,6 +139,13 @@ export function setupForms(
   });
 
   function contextHtml(ctx: FormContext): { title: string; ctx: string } {
+    if (ctx.kind === 'signal') {
+      const sp = store.stuckPoints.get(ctx.stuckPointId)!;
+      return {
+        title: 'Add a signal',
+        ctx: `<p class="k">${esc(sp.code)} · ${esc(sp.name)}</p><p class="muted">${esc(sp.symptom)}</p>`,
+      };
+    }
     if (ctx.kind === 'remediation') {
       const rc = store.rootCauses.get(ctx.rootCauseId)!;
       const sp = store.stuckPoints.get(rc.stuck_point_id)!;
@@ -147,15 +178,22 @@ export function setupForms(
           ${store.sections.map((s) => `<option value="${s.id}" ${ctx.section === s.id ? 'selected' : ''}>${s.id} · ${esc(SHORT_NAME[s.id] ?? s.name)}</option>`).join('')}
         </select>
       </div>`;
-      fields += textField('name', 'Where flow gets stuck', LIMITS.name, { value: ctx.name, hint: 'A short name, e.g. “Review backs up”' });
-      fields += textField('symptom', 'Symptom', LIMITS.symptom, { multiline: true, hint: 'What you see when it happens' });
+      fields += textField('name', 'Where flow gets stuck', LIMITS.name, { value: ctx.name, hint: 'A short name', placeholder: SAMPLE.name });
+      fields += textField('symptom', 'Symptom', LIMITS.symptom, { multiline: true, hint: 'What you see when it happens', placeholder: SAMPLE.symptom });
       fields += `<div class="field"><p class="label">Signals that show it <span class="muted">(optional, up to ${LIMITS.signals})</span></p>
         <div data-signals>${signalRow()}</div>
         <button type="button" class="link" data-add-signal>+ Add a signal</button></div>`;
     }
-    if (ctx.kind !== 'remediation') {
-      fields += textField('root_cause', 'Root cause', LIMITS.text, { multiline: true, hint: 'Why it gets stuck' });
+    if (ctx.kind === 'signal') {
+      fields += `<div class="field"><p class="label">Signals that show it <span class="muted">(up to ${LIMITS.signals})</span></p>
+        <p class="hint">A metric or sign you'd watch to see this happening</p>
+        <div data-signals>${signalRow()}</div>
+        <button type="button" class="link" data-add-signal>+ Add another signal</button></div>`;
     }
+    if (ctx.kind === 'root_cause' || ctx.kind === 'stuck_point') {
+      fields += textField('root_cause', 'Root cause', LIMITS.text, { multiline: true, hint: 'Why it gets stuck', placeholder: SAMPLE.rootCause });
+    }
+    const withRems = ctx.kind !== 'signal';
 
     dialog.innerHTML = `
       <form class="sheet" novalidate>
@@ -166,9 +204,9 @@ export function setupForms(
         <div class="sheet-body">
           ${ctxHtml ? `<div class="ctx">${ctxHtml}</div>` : ''}
           ${fields}
-          <div data-rems>${remRow(1, ctx.kind === 'remediation' ? ctx.lens : undefined)}</div>
-          <button type="button" class="link" data-add-rem>+ Add another remediation</button>
-          <p class="notice">${NOTICE} <a href="/terms.html" target="_blank" rel="noopener">About and terms</a></p>
+          ${withRems ? `<div data-rems>${remRow(1, ctx.kind === 'remediation' ? ctx.lens : undefined)}</div>
+          <button type="button" class="link" data-add-rem>+ Add another remediation</button>` : ''}
+          <p class="notice">${NOTICE}</p>
           <div class="turnstile" data-turnstile></div>
           <p class="form-error" role="alert" data-error></p>
         </div>
@@ -209,8 +247,9 @@ export function setupForms(
   }
 
   function wire(form: HTMLFormElement, ctx: FormContext) {
-    const rems = form.querySelector<HTMLElement>('[data-rems]')!;
+    const rems = form.querySelector<HTMLElement>('[data-rems]');
     const renumber = () => {
+      if (!rems) return;
       const rows = rems.querySelectorAll('[data-rem]');
       rows.forEach((row, i) => {
         row.querySelector('[data-n]')!.textContent = String(i + 1);
@@ -223,6 +262,11 @@ export function setupForms(
     form.addEventListener('input', (e) => {
       const t = e.target as HTMLInputElement;
       if (t.dataset.max) updateCounter(t);
+      // Match the sample text to the lens just picked.
+      if (t.type === 'radio') {
+        const ta = t.closest('[data-rem]')?.querySelector('textarea');
+        if (ta) ta.placeholder = SAMPLE.remediation[t.value as Lens];
+      }
       showError(form, '');
     });
     form.querySelectorAll<HTMLInputElement>('[data-max]').forEach(updateCounter);
@@ -231,7 +275,7 @@ export function setupForms(
       const t = (e.target as HTMLElement).closest('button');
       if (!t) return;
       if (t.hasAttribute('data-close')) dialog.close();
-      if (t.hasAttribute('data-add-rem')) {
+      if (t.hasAttribute('data-add-rem') && rems) {
         rems.insertAdjacentHTML('beforeend', remRow(rems.children.length + 1));
         renumber();
         (rems.lastElementChild!.querySelector('input[type=radio]') as HTMLElement).focus();
@@ -260,7 +304,7 @@ export function setupForms(
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const sub = collect(form, ctx);
-      const missingLens = [...rems.querySelectorAll('[data-rem]')].findIndex((row) => !row.querySelector('input[type=radio]:checked'));
+      const missingLens = [...form.querySelectorAll('[data-rem]')].findIndex((row) => !row.querySelector('input[type=radio]:checked'));
       const err =
         missingLens >= 0 ? `Pick People, Process or Tech for remediation ${missingLens + 1}` : validateSubmission(sub);
       if (err) {
@@ -301,6 +345,8 @@ function collect(form: HTMLFormElement, ctx: FormContext): Submission {
     lens: ((row.querySelector('input[type=radio]:checked') as HTMLInputElement | null)?.value ?? '') as Lens,
     text: (row.querySelector('textarea') as HTMLTextAreaElement).value,
   }));
+  const signals = [...form.querySelectorAll<HTMLInputElement>('[data-signal] input')].map((i) => i.value);
+  if (ctx.kind === 'signal') return { type: 'signal', stuck_point_id: ctx.stuckPointId, signals };
   if (ctx.kind === 'remediation') return { type: 'remediation', root_cause_id: ctx.rootCauseId, remediations };
   if (ctx.kind === 'root_cause') {
     return { type: 'root_cause', stuck_point_id: ctx.stuckPointId, root_cause: val('root_cause'), remediations };
@@ -310,7 +356,7 @@ function collect(form: HTMLFormElement, ctx: FormContext): Submission {
     section: val('section') as SectionId,
     name: val('name'),
     symptom: val('symptom'),
-    signals: [...form.querySelectorAll<HTMLInputElement>('[data-signal] input')].map((i) => i.value),
+    signals,
     root_cause: val('root_cause'),
     remediations,
   };

@@ -36,13 +36,20 @@ export interface Remediation extends Row {
   text: string;
 }
 
-export type TableName = 'stuck_points' | 'root_causes' | 'remediations';
+/** A signal added to an existing stuck point after it was created. */
+export interface Signal extends Row {
+  stuck_point_id: string;
+  text: string;
+}
+
+export type TableName = 'stuck_points' | 'root_causes' | 'remediations' | 'signals';
 
 export interface Snapshot {
   sections: Section[];
   stuck_points: StuckPoint[];
   root_causes: RootCause[];
   remediations: Remediation[];
+  signals: Signal[];
 }
 
 export interface RemediationInput {
@@ -51,6 +58,7 @@ export interface RemediationInput {
 }
 
 export type Submission =
+  | { type: 'signal'; stuck_point_id: string; signals: string[] }
   | { type: 'remediation'; root_cause_id: string; remediations: RemediationInput[] }
   | { type: 'root_cause'; stuck_point_id: string; root_cause: string; remediations: RemediationInput[] }
   | {
@@ -67,9 +75,10 @@ export interface SubmitResult {
   stuck_point: StuckPoint | null;
   root_cause: RootCause | null;
   remediations: Remediation[];
+  signals: Signal[];
 }
 
 export type ChangeEvent =
-  | { kind: 'upsert'; table: TableName; row: StuckPoint | RootCause | Remediation }
+  | { kind: 'upsert'; table: TableName; row: StuckPoint | RootCause | Remediation | Signal }
   | { kind: 'remove'; table: TableName; id: string }
   | { kind: 'resync' };

@@ -909,10 +909,12 @@ mark {
 .lib col.w-lens {
   width: 16.66%;
 }
-.lib thead th {
+.lib thead {
   position: sticky;
   top: var(--controls-h, 0px);
   z-index: 5;
+}
+.lib thead th {
   background: var(--head);
   text-align: left;
   font-weight: 600;
@@ -1445,4 +1447,52 @@ mark {
 
 .sheet-body > .link {
   justify-self: start;
+}
+
+/* Grouped header: Diagnosis | Remediation */
+.lib thead .group-row th {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  padding: 8px 14px 6px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+.lib thead .group-row .g-rem {
+  border-left: 2px solid var(--border-strong);
+}
+.lib thead tr:last-child .h-people,
+.lib .c-people {
+  border-left: 2px solid var(--border-strong);
+}
+
+/* "+ Add" sits at the bottom of the column it adds to */
+.lib .c-lens .add,
+.lens-body .add {
+  margin-top: 4px;
+}
+.lib .add-row td {
+  border-top: 1px dashed var(--border);
+  padding-top: 6px;
+  padding-bottom: 8px;
+}
+.lib .c-sig .signals .badge,
+.card .signals .badge {
+  margin-left: 2px;
+  font-size: 10px;
+  padding: 2px 5px;
+}
+.card .sig-details .add {
+  margin-bottom: 4px;
+}
+.card .rem-k {
+  margin-top: 12px;
+}
+.card .lenses {
+  margin-top: 6px;
+}
+.lens-body .rems + .add {
+  display: block;
 }
