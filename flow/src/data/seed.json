@@ -432,6 +432,35 @@
       ]
     },
     {
+      "section": "A",
+      "code": "A6",
+      "name": "Judgment atrophies",
+      "symptom": "People stop challenging agent output and struggle without it",
+      "signals": [
+        "Issues humans catch that agents missed",
+        "Time to diagnose a problem without an agent"
+      ],
+      "root_causes": [
+        {
+          "text": "People defer to agent recommendations",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Protect time for solving problems unaided"
+            },
+            {
+              "lens": "process",
+              "text": "Form your own view before seeing the agent's on selected tasks"
+            },
+            {
+              "lens": "tech",
+              "text": "Agents show alternatives, not a single answer"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "section": "B",
       "code": "B1",
       "name": "Output is plausible but wrong",
@@ -520,6 +549,83 @@
             {
               "lens": "tech",
               "text": "One board that shows agent and human work together"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "B",
+      "code": "B3",
+      "name": "Agent performance drifts",
+      "symptom": "An agent that worked well starts producing worse results",
+      "signals": [
+        "Success rate on a fixed set of sample tasks",
+        "Quality after model, prompt or tool changes",
+        "Rework rate by agent"
+      ],
+      "root_causes": [
+        {
+          "text": "Agent setup changes without regression testing",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "A named owner for each agent's performance"
+            },
+            {
+              "lens": "process",
+              "text": "Test changes against an evaluation set before rollout"
+            },
+            {
+              "lens": "tech",
+              "text": "Automated regression evals and version tracking"
+            }
+          ]
+        },
+        {
+          "text": "Agent context goes stale",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Someone owns keeping agent context current"
+            },
+            {
+              "lens": "process",
+              "text": "Review agent context when architecture or priorities change"
+            },
+            {
+              "lens": "tech",
+              "text": "Freshness checks on agent context"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "B",
+      "code": "B4",
+      "name": "Agent economics are invisible",
+      "symptom": "No one can tell whether agents create more value than they cost",
+      "signals": [
+        "Cost per accepted change",
+        "Human review time per agent change",
+        "Rework cost per agent workflow"
+      ],
+      "root_causes": [
+        {
+          "text": "Teams count output, not the full cost of producing it",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Leaders accountable for net value, not output"
+            },
+            {
+              "lens": "process",
+              "text": "Count review and rework in the cost of agent work"
+            },
+            {
+              "lens": "tech",
+              "text": "Track agent spend alongside the human effort it creates"
             }
           ]
         }
@@ -703,6 +809,83 @@
       ]
     },
     {
+      "section": "D",
+      "code": "D3",
+      "name": "Authority boundaries are unclear",
+      "symptom": "Agents act beyond what was delegated, or humans own what they can't control",
+      "signals": [
+        "Out-of-scope agent actions",
+        "Agent actions humans had to undo",
+        "Agent workflows with explicit permissions"
+      ],
+      "root_causes": [
+        {
+          "text": "What agents may do on their own was never defined",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Agree what agents can decide and do alone"
+            },
+            {
+              "lens": "process",
+              "text": "Decision rights by risk and reversibility"
+            },
+            {
+              "lens": "tech",
+              "text": "Permission scopes, approval gates and action limits"
+            }
+          ]
+        },
+        {
+          "text": "The accountable human can't intervene",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "The accountable person can step in at any point"
+            },
+            {
+              "lens": "process",
+              "text": "Clear escalation and override steps"
+            },
+            {
+              "lens": "tech",
+              "text": "Pause, cancel and roll back agent workflows"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "D",
+      "code": "D4",
+      "name": "Trust in agents isn't calibrated",
+      "symptom": "People rubber-stamp agent work, or review everything the same way",
+      "signals": [
+        "Acceptance rate of agent work by risk level",
+        "Defects missed in review of agent work",
+        "Review time vs. risk of the change"
+      ],
+      "root_causes": [
+        {
+          "text": "People can't see where agents are reliable",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Learn where agents succeed and fail"
+            },
+            {
+              "lens": "process",
+              "text": "Review agent misses together in retros"
+            },
+            {
+              "lens": "tech",
+              "text": "Show provenance and track record next to agent output"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "section": "E",
       "code": "E1",
       "name": "Failures go unnoticed",
@@ -765,6 +948,100 @@
             {
               "lens": "tech",
               "text": "Automatic escalation when checks fail or confidence is low"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "E",
+      "code": "E2",
+      "name": "Agent handoffs break",
+      "symptom": "One agent's output lacks what the next agent needs",
+      "signals": [
+        "Failed handoffs between agents",
+        "Rework after agent-to-agent handoffs",
+        "Wait time between agent stages"
+      ],
+      "root_causes": [
+        {
+          "text": "Agents assume different formats or inputs",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "An owner for each agent-to-agent interface"
+            },
+            {
+              "lens": "process",
+              "text": "Handoff contracts that say what must be passed on"
+            },
+            {
+              "lens": "tech",
+              "text": "Shared schemas, validated at each handoff"
+            }
+          ]
+        },
+        {
+          "text": "Handoffs don't carry state",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Decide what context must survive each handoff"
+            },
+            {
+              "lens": "process",
+              "text": "Handoffs include decisions made and open questions"
+            },
+            {
+              "lens": "tech",
+              "text": "Shared workflow state agents can read"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "E",
+      "code": "E3",
+      "name": "Agents loop without progress",
+      "symptom": "Agents retry, re-delegate or contradict each other without finishing",
+      "signals": [
+        "Retries per task",
+        "Workflows running past their expected time",
+        "Delegation cycles between agents"
+      ],
+      "root_causes": [
+        {
+          "text": "No stopping rules",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Define when an agent should stop and ask"
+            },
+            {
+              "lens": "process",
+              "text": "Retry limits and escalation thresholds"
+            },
+            {
+              "lens": "tech",
+              "text": "Loop detection, budgets and timeouts"
+            }
+          ]
+        },
+        {
+          "text": "Agents have conflicting goals or instructions",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "One owner for a workflow's priorities"
+            },
+            {
+              "lens": "process",
+              "text": "Resolve conflicting instructions before agents run"
+            },
+            {
+              "lens": "tech",
+              "text": "Instructions managed in one place"
             }
           ]
         }
@@ -902,6 +1179,53 @@
       ]
     },
     {
+      "section": "F",
+      "code": "F4",
+      "name": "The bottleneck keeps moving",
+      "symptom": "Fixing one constraint creates another somewhere else",
+      "signals": [
+        "Wait time per stage over time",
+        "Lead time before and after a change",
+        "Downstream work in progress after upstream fixes"
+      ],
+      "root_causes": [
+        {
+          "text": "Fixes optimize one stage, not end-to-end flow",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Someone owns the whole path from source to sink"
+            },
+            {
+              "lens": "process",
+              "text": "Judge changes by total lead time, not one stage"
+            },
+            {
+              "lens": "tech",
+              "text": "End-to-end flow view that shows queues"
+            }
+          ]
+        },
+        {
+          "text": "Changes have side effects elsewhere",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Involve downstream owners before changing a workflow"
+            },
+            {
+              "lens": "process",
+              "text": "Review system-wide effects after a change"
+            },
+            {
+              "lens": "tech",
+              "text": "Watch downstream queues and rework after rollout"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "section": "G",
       "code": "G1",
       "name": "Shipped, but nothing moves",
@@ -963,6 +1287,53 @@
             {
               "lens": "tech",
               "text": "Instrument before launch"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "G",
+      "code": "G2",
+      "name": "Output up, customer experience down",
+      "symptom": "More ships, but customers hit more friction and bugs",
+      "signals": [
+        "Customer-reported issues per release",
+        "Support tickets per active user",
+        "Retention and satisfaction"
+      ],
+      "root_causes": [
+        {
+          "text": "Speed traded for usability and reliability",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Customer experience is part of engineering quality"
+            },
+            {
+              "lens": "process",
+              "text": "Usability and reliability in release criteria"
+            },
+            {
+              "lens": "tech",
+              "text": "Monitor customer-facing errors and task success"
+            }
+          ]
+        },
+        {
+          "text": "Teams can't see how changes land with customers",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Bring support and customer teams into feedback loops"
+            },
+            {
+              "lens": "process",
+              "text": "Review customer impact after each release"
+            },
+            {
+              "lens": "tech",
+              "text": "Link support signals and analytics to shipped changes"
             }
           ]
         }
