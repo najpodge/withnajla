@@ -15,12 +15,14 @@ Keep a scratch note of the values you collect. Three are **public** (safe in the
 
 ---
 
-## 1. GitHub repo (Claude, with your OK)
+## 1. GitHub repo — done
 
-- [ ] Create the repo and push. Repo: `najpodge/withnajla` (public), this project in `flow/`. GitHub Pages is free only for public repos, unless you're on GitHub Pro.
-- [ ] Settings → Pages → Source: **GitHub Actions**.
+- [x] Repo: https://github.com/najpodge/withnajla (public). This project is in `flow/`; future projects get their own folders next to it.
+- [x] GitHub Pages is on (source: GitHub Actions), the custom domain is set to `flow.withnajla.com`, and the first deploy succeeded.
 
-The first deploy runs on push. Until step 4 is done it ships in demo mode, with the yellow "Demo mode" note showing.
+Until step 4 is done the site runs in demo mode, with the yellow "Demo mode" note showing.
+
+Run every command below from the `flow` folder: `cd ~/withnajla/flow`.
 
 ## 2. Supabase (you)
 
@@ -58,8 +60,9 @@ The first deploy runs on push. Until step 4 is done it ships in demo mode, with 
 
 ## 5. Domain (you)
 
-- [ ] At the registrar for withnajla.com, add a DNS record: type `CNAME`, name `flow`, value `najpodge.github.io`.
-- [ ] GitHub → Settings → Pages → Custom domain: `flow.withnajla.com` → Save. When the certificate is ready (minutes to an hour), tick **Enforce HTTPS**.
+- [ ] Add a DNS record: type `CNAME`, name `flow`, value `najpodge.github.io`. Add it wherever withnajla.com's DNS is managed. Its nameservers are NS1 (`*.p02.nsone.net`), which Netlify DNS uses, so check Netlify first, then your registrar.
+- [x] The custom domain `flow.withnajla.com` is already set in GitHub Pages.
+- [ ] Once DNS works (minutes to an hour), go to GitHub → najpodge/withnajla → Settings → Pages and tick **Enforce HTTPS**.
 
 ## 6. Check it works (Claude can run most of these)
 
