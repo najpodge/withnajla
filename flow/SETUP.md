@@ -60,7 +60,7 @@ Run every command below from the `flow` folder: `cd ~/withnajla/flow`.
 
 ## 5. Domain (you)
 
-- [ ] Add a DNS record: type `CNAME`, name `flow`, value `najpodge.github.io`. Add it wherever withnajla.com's DNS is managed. Its nameservers are NS1 (`*.p02.nsone.net`), which Netlify DNS uses, so check Netlify first, then your registrar.
+- [ ] Add a DNS record in **Squarespace**, which manages withnajla.com's DNS: Domains → withnajla.com → DNS → Custom records → Add record. Type `CNAME`, Host `flow`, Data `najpodge.github.io` → Save. Leave the existing Squarespace records alone.
 - [x] The custom domain `flow.withnajla.com` is already set in GitHub Pages.
 - [ ] Once DNS works (minutes to an hour), go to GitHub → najpodge/withnajla → Settings → Pages and tick **Enforce HTTPS**.
 
