@@ -45,13 +45,12 @@ function flash(store: Store, id: string): string {
   return ` is-new" style="animation-delay:-${elapsed}ms`;
 }
 
-/** Community items get a badge with their age; curated items get none. */
 export function badge(row: { source: string; created_at: string }): string {
-  if (row.source !== 'community') return '';
+  if (row.source === 'najla') return `<span class="badge badge-najla" title="Curated by Najla">Najla</span>`;
   return `<span class="badge badge-community">Community · <time datetime="${row.created_at}" data-ago>${ago(row.created_at)}</time></span>`;
 }
 
-const meta = (row: { source: string; created_at: string }) => (row.source === 'community' ? `<p class="meta">${badge(row)}</p>` : '');
+const meta = (row: { source: string; created_at: string }) => `<p class="meta">${badge(row)}</p>`;
 
 const addBtn = (action: string, attrs: string, text: string, label?: string) =>
   `<button type="button" class="add" data-action="${action}" ${attrs}${label ? ` aria-label="${esc(label)}"` : ''}>${text}</button>`;
