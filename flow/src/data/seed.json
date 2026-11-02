@@ -734,6 +734,53 @@
       ]
     },
     {
+      "section": "C",
+      "code": "C3",
+      "name": "Dependencies are invisible",
+      "symptom": "Work is blocked by dependencies nobody planned for",
+      "signals": [
+        "Time blocked on other people or teams",
+        "Blocked work with no named dependency owner",
+        "Dependencies found before work starts"
+      ],
+      "root_causes": [
+        {
+          "text": "Dependencies discovered too late",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Talk about dependencies early"
+            },
+            {
+              "lens": "process",
+              "text": "Map dependencies during planning"
+            },
+            {
+              "lens": "tech",
+              "text": "Track dependencies across teams and agent workflows"
+            }
+          ]
+        },
+        {
+          "text": "No one owns the interface between teams",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Named owners for critical interfaces"
+            },
+            {
+              "lens": "process",
+              "text": "Agreed response times for handoffs"
+            },
+            {
+              "lens": "tech",
+              "text": "Alerts when work waits longer than agreed"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "section": "D",
       "code": "D1",
       "name": "Delegation fails",
@@ -1334,6 +1381,53 @@
             {
               "lens": "tech",
               "text": "Link support signals and analytics to shipped changes"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "section": "G",
+      "code": "G3",
+      "name": "Value fades after launch",
+      "symptom": "A feature lands well, then its value declines",
+      "signals": [
+        "Adoption over time",
+        "Repeat usage after launch",
+        "Long-term change in the target metric"
+      ],
+      "root_causes": [
+        {
+          "text": "Success judged only at launch",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "An ongoing owner for each outcome"
+            },
+            {
+              "lens": "process",
+              "text": "Review outcomes again months after launch"
+            },
+            {
+              "lens": "tech",
+              "text": "Track adoption and outcomes over time"
+            }
+          ]
+        },
+        {
+          "text": "Tech debt from building fast wears the feature down",
+          "remediations": [
+            {
+              "lens": "people",
+              "text": "Engineers own what they shipped, not just what's new"
+            },
+            {
+              "lens": "process",
+              "text": "Standing time to maintain what already shipped"
+            },
+            {
+              "lens": "tech",
+              "text": "Track code coherence and defects per feature over time"
             }
           ]
         }
