@@ -1,8 +1,11 @@
-name: Deploy to GitHub Pages
+name: Deploy flow.withnajla.com
 
 on:
   push:
     branches: [main]
+    paths:
+      - 'flow/**'
+      - '.github/workflows/deploy-flow.yml'
   workflow_dispatch:
 
 permissions:
@@ -14,6 +17,10 @@ concurrency:
   group: pages
   cancel-in-progress: true
 
+defaults:
+  run:
+    working-directory: flow
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -23,6 +30,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: flow/package-lock.json
       - run: npm ci
       - run: npm run build
         env:
@@ -33,7 +41,7 @@ jobs:
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: flow/dist
 
   deploy:
     needs: build

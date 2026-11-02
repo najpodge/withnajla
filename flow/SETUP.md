@@ -17,7 +17,7 @@ Keep a scratch note of the values you collect. Three are **public** (safe in the
 
 ## 1. GitHub repo (Claude, with your OK)
 
-- [ ] Create the repo and push the local commit. Proposed: `najpodge/withnajla-flow`, **public**. GitHub Pages is free only for public repos, unless you're on GitHub Pro.
+- [ ] Create the repo and push. Repo: `najpodge/withnajla` (public), this project in `flow/`. GitHub Pages is free only for public repos, unless you're on GitHub Pro.
 - [ ] Settings → Pages → Source: **GitHub Actions**.
 
 The first deploy runs on push. Until step 4 is done it ships in demo mode, with the yellow "Demo mode" note showing.
@@ -54,7 +54,7 @@ The first deploy runs on push. Until step 4 is done it ships in demo mode, with 
 - [ ] `VITE_SUPABASE_URL`
 - [ ] `VITE_SUPABASE_ANON_KEY`
 - [ ] `VITE_TURNSTILE_SITE_KEY`
-- [ ] Then Actions → "Deploy to GitHub Pages" → Run workflow.
+- [ ] Then Actions → "Deploy flow.withnajla.com" → Run workflow.
 
 ## 5. Domain (you)
 
