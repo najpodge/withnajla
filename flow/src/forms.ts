@@ -98,12 +98,14 @@ export function setupForms(
 ) {
   let widgetId: string | null = null;
   let token: string | null = null;
+  let tsFailed = false;
   let opener: HTMLElement | null = null;
 
   dialog.addEventListener('close', () => {
     if (widgetId && window.turnstile) window.turnstile.remove(widgetId);
     widgetId = null;
     token = null;
+    tsFailed = false;
     document.body.classList.remove('sheet-open');
     opener?.focus();
   });
@@ -196,7 +198,10 @@ export function setupForms(
             appearance: 'interaction-only',
             callback: (t: string) => (token = t),
             'expired-callback': () => (token = null),
-            'error-callback': () => (token = null),
+            'error-callback': () => {
+              token = null;
+              tsFailed = true;
+            },
           });
         })
         .catch((err: Error) => showError(form, err.message));
@@ -269,7 +274,7 @@ export function setupForms(
       btn.textContent = 'Submitting…';
       try {
         let t: string | null = null;
-        if (backend.needsTurnstile) t = await waitForToken(() => token);
+        if (backend.needsTurnstile) t = await waitForToken(() => token, () => tsFailed);
         const result = await backend.submit(normalize(sub), t);
         dialog.close();
         onSuccess(result);
@@ -277,6 +282,7 @@ export function setupForms(
         showError(form, (ex as Error).message);
         if (widgetId && window.turnstile) {
           token = null;
+          tsFailed = false;
           window.turnstile.reset(widgetId);
         }
       } finally {
@@ -334,12 +340,13 @@ function showError(form: HTMLFormElement, msg: string) {
   if (el) el.textContent = msg;
 }
 
-function waitForToken(get: () => string | null, timeoutMs = 15000): Promise<string> {
+function waitForToken(get: () => string | null, failed: () => boolean, timeoutMs = 15000): Promise<string> {
   return new Promise((resolve, reject) => {
     const start = Date.now();
     const tick = () => {
       const t = get();
       if (t) return resolve(t);
+      if (failed()) return reject(new Error("The spam check couldn't confirm you're human. Try again, or use another browser."));
       if (Date.now() - start > timeoutMs) return reject(new Error('The spam check did not finish. Please try again.'));
       setTimeout(tick, 150);
     };
