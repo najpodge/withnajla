@@ -23,24 +23,35 @@ function renderStatic() {
 
   const d = content.definitions;
   $('[data-primer-body]').innerHTML = `
-    <ul class="legend">
-      <li>${glyph.human}<span>Human node</span></li>
-      <li>${glyph.agent}<span>Agent node</span></li>
-      <li>${glyph.solid}<span>Human ↔ human</span></li>
-      <li>${glyph.dashed}<span>Human ↔ agent</span></li>
-      <li>${glyph.dotted}<span>Agent ↔ agent</span></li>
-      <li>${glyph.source}<span>Source</span></li>
-      <li>${glyph.sink}<span>Sink</span></li>
-    </ul>
-    <dl class="defs">
-      ${(['node', 'edge', 'source', 'sink', 'output', 'flow'] as const)
-        .map((k) => `<div><dt>${k[0].toUpperCase() + k.slice(1)}</dt><dd>${esc(d[k])}</dd></div>`)
-        .join('')}
-    </dl>
     <p class="key-line">Output is the work moving along the edges. <strong>Flow is what reaches the sink.</strong></p>
-    <dl class="lens-defs">
-      ${LENSES.map((l) => `<div><dt><span class="tag tag-${l}">${LENS_LABEL[l]}</span></dt><dd>${esc(content.lenses[l])}</dd></div>`).join('')}
-    </dl>`;
+    <div class="primer-cols">
+      <div>
+        <h3 class="k">Legend</h3>
+        <ul class="legend">
+          <li>${glyph.human}<span>Human node</span></li>
+          <li>${glyph.agent}<span>Agent node</span></li>
+          <li>${glyph.solid}<span>Human ↔ human</span></li>
+          <li>${glyph.dashed}<span>Human ↔ agent</span></li>
+          <li>${glyph.dotted}<span>Agent ↔ agent</span></li>
+          <li>${glyph.source}<span>Source</span></li>
+          <li>${glyph.sink}<span>Sink</span></li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="k">Definitions</h3>
+        <dl class="defs">
+          ${(['node', 'edge', 'source', 'sink', 'output', 'flow'] as const)
+            .map((k) => `<div><dt>${k[0].toUpperCase() + k.slice(1)}</dt><dd>${esc(d[k])}</dd></div>`)
+            .join('')}
+        </dl>
+      </div>
+      <div>
+        <h3 class="k">Remediation lenses</h3>
+        <dl class="lens-defs">
+          ${LENSES.map((l) => `<div><dt><span class="tag tag-${l}">${LENS_LABEL[l]}</span></dt><dd>${esc(content.lenses[l])}</dd></div>`).join('')}
+        </dl>
+      </div>
+    </div>`;
 
   const primer = $<HTMLDetailsElement>('[data-primer]');
   primer.open = desktop.matches;
@@ -48,13 +59,15 @@ function renderStatic() {
   const ex = content.worked_example;
   $('[data-example]').innerHTML = `
     <article class="example">
-      <p class="eyebrow">Worked example</p>
-      <h2>${esc(ex.title)}</h2>
+      <p class="k">Worked example</p>
+      <h2>${esc(ex.title.replace(/^Example:\s*/, '').replace(/^./, (c) => c.toUpperCase()))}</h2>
       <p class="example-setup">${esc(ex.setup)}</p>
       <dl class="example-grid">
         <div><dt>Shows up</dt><dd>${esc(ex.shows_up)}</dd></div>
         <div><dt>Root cause</dt><dd>${esc(ex.root_cause)}</dd></div>
-        ${LENSES.map((l) => `<div><dt><span class="tag tag-${l}">${LENS_LABEL[l]}</span></dt><dd>${esc(ex.fixes[l])}</dd></div>`).join('')}
+        <div><dt>Remediation</dt><dd><div class="fixes">${LENSES.map(
+          (l) => `<div><span class="tag tag-${l}">${LENS_LABEL[l]}</span><span>${esc(ex.fixes[l])}</span></div>`,
+        ).join('')}</div></dd></div>
         <div class="watch"><dt>Watch</dt><dd>${esc(ex.watch)}</dd></div>
       </dl>
     </article>`;
