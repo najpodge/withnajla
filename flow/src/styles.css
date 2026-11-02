@@ -1423,13 +1423,6 @@ mark {
   .controls-inner {
     grid-template-columns: 1fr auto;
   }
-  .extras {
-    grid-template-columns: 1fr 1fr;
-    align-items: start;
-  }
-  .practice-grid {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

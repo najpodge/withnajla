@@ -59,17 +59,6 @@ function renderStatic() {
       </dl>
     </article>`;
 
-  $('[data-practices]').innerHTML = content.practices
-    .map(
-      (p) => `<article class="practice">
-        <p class="practice-sec"><span class="letter">${p.section}</span>${esc(SHORT_NAME[p.section])}</p>
-        <h3>${esc(p.title)}</h3>
-        <ul>${p.points.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>
-        <p class="muted">${esc(p.example)}</p>
-      </article>`,
-    )
-    .join('');
-
   const c = content.contact;
   $('[data-footer]').innerHTML = `
     <div>
