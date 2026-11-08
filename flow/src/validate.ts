@@ -9,27 +9,24 @@ export function validateSubmission(sub: Submission): string | null {
     if (t.length > max) return `${label} must be ${max} characters or fewer`;
     return null;
   };
+  const optional = (v: string, label: string, max: number) =>
+    v.trim().length > max ? `${label} must be ${max} characters or fewer` : null;
 
-  if (sub.type === 'signal') {
-    const sigs = sub.signals.map((s) => s.trim()).filter(Boolean);
-    if (!sigs.length) return 'Add at least one signal';
-    if (sigs.length > LIMITS.signals) return `At most ${LIMITS.signals} signals at a time`;
-    for (const s of sigs) if (s.length > LIMITS.signal) return `Each signal must be ${LIMITS.signal} characters or fewer`;
-    return null;
-  }
-  if (sub.type === 'stuck_point') {
+  if (sub.type === 'metric') {
     if (!/^[A-G]$/.test(sub.section)) return 'Pick a section A–G';
-    const e = field(sub.name, 'Name', LIMITS.name) ?? field(sub.symptom, 'Symptom', LIMITS.symptom);
+    if (sub.arrow !== 'up' && sub.arrow !== 'down') return 'Pick whether it should go up or down';
+    const e =
+      field(sub.name, 'Signal', LIMITS.signal) ??
+      optional(sub.looks_like, 'When it goes wrong', LIMITS.text) ??
+      optional(sub.root_cause, 'Root cause', LIMITS.text);
     if (e) return e;
-    const sigs = sub.signals.map((s) => s.trim()).filter(Boolean);
-    if (sigs.length > LIMITS.signals) return `At most ${LIMITS.signals} signals`;
-    for (const s of sigs) if (s.length > LIMITS.signal) return `Each signal must be ${LIMITS.signal} characters or fewer`;
+    if (sub.remediations.length && !sub.root_cause.trim()) return 'Add a root cause for these remediations';
   }
-  if (sub.type === 'stuck_point' || sub.type === 'root_cause') {
-    const e = field(sub.root_cause, 'Root cause', LIMITS.text);
+  if (sub.type === 'cause' && !sub.root_cause_id) {
+    const e = field(sub.root_cause ?? '', 'Root cause', LIMITS.text);
     if (e) return e;
   }
-  if (sub.remediations.length === 0) return 'Add at least one remediation';
+  if (sub.type === 'remediation' && sub.remediations.length === 0) return 'Add at least one remediation';
   if (sub.remediations.length > LIMITS.remediations) return `At most ${LIMITS.remediations} remediations at a time`;
   for (const r of sub.remediations) {
     if (!LENSES.includes(r.lens)) return 'Each remediation needs a lens: People, Process or Tech';
@@ -39,20 +36,22 @@ export function validateSubmission(sub: Submission): string | null {
   return null;
 }
 
-/** Trim everything and drop empty signals before sending. */
+/** Trim everything before sending. */
 export function normalize(sub: Submission): Submission {
-  if (sub.type === 'signal') return { ...sub, signals: sub.signals.map((s) => s.trim()).filter(Boolean) };
   const remediations = sub.remediations.map((r) => ({ lens: r.lens, text: r.text.trim() }));
-  if (sub.type === 'stuck_point') {
+  if (sub.type === 'metric') {
     return {
       ...sub,
       name: sub.name.trim(),
-      symptom: sub.symptom.trim(),
+      looks_like: sub.looks_like.trim(),
       root_cause: sub.root_cause.trim(),
-      signals: sub.signals.map((s) => s.trim()).filter(Boolean),
       remediations,
     };
   }
-  if (sub.type === 'root_cause') return { ...sub, root_cause: sub.root_cause.trim(), remediations };
+  if (sub.type === 'cause') {
+    return sub.root_cause_id
+      ? { type: 'cause', metric_id: sub.metric_id, root_cause_id: sub.root_cause_id, remediations }
+      : { type: 'cause', metric_id: sub.metric_id, root_cause: (sub.root_cause ?? '').trim(), remediations };
+  }
   return { ...sub, remediations };
 }

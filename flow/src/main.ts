@@ -3,7 +3,7 @@ import { createBackend } from './backend';
 import { content, LENS_LABEL, LENSES, SHORT_NAME } from './content';
 import { diagramSvg, glyph, highlightDiagram } from './diagram';
 import { setupForms, type FormContext } from './forms';
-import { countLabel, emptyState, renderCards, renderTable, visibleRows, type Filter } from './library';
+import { countLabel, emptyState, renderPhone, renderTable, visibleRows, type Filter, type PhoneState } from './library';
 import { Store } from './store';
 import type { Lens, SectionId, SubmitResult } from './types';
 import { ago, esc, prefersReducedMotion, splitSignal } from './util';
@@ -13,6 +13,7 @@ const desktop = window.matchMedia('(min-width: 960px)');
 
 const store = new Store();
 const filter: Filter = { section: null, q: '' };
+const phone: PhoneState = { metricId: null, rcId: null };
 
 // ---------------------------------------------------------------------------
 // Static copy
@@ -125,7 +126,11 @@ function renderSide() {
         .map((sig) => {
           const { arrow, label } = splitSignal(sig);
           const dir = arrow === '↑' ? 'up' : 'down';
-          return `<li><span class="arrow arrow-${dir}" aria-label="${arrow ? `should go ${dir}` : ''}">${arrow}</span>${esc(label)}</li>`;
+          const m = [...store.metrics.values()].find((x) => x.section === s.id && x.name.toLowerCase() === label.toLowerCase());
+          const text = m
+            ? `<button type="button" class="link metric-link" data-action="goto-metric" data-metric="${m.id}">${esc(label)}</button>`
+            : esc(label);
+          return `<li><span class="arrow arrow-${dir}" aria-label="${arrow ? `should go ${dir}` : ''}">${arrow}</span>${text}</li>`;
         })
         .join('')}</ul>
       <button type="button" class="link" data-filter="">Show all sections</button>
@@ -145,13 +150,14 @@ function renderLibrary() {
     box.innerHTML = emptyState(filter);
   } else {
     const q = filter.q.trim();
-    box.innerHTML = desktop.matches ? renderTable(store, rows, q) : `<div class="cards">${renderCards(store, rows, q)}</div>`;
+    box.innerHTML = desktop.matches ? renderTable(store, rows, q) : renderPhone(store, rows, q, phone);
   }
   if (focusKey) box.querySelector<HTMLElement>(`[data-key="${CSS.escape(focusKey)}"]`)?.focus({ preventScroll: true });
 }
 
 function setFilter(section: SectionId | null, opts: { scroll?: boolean } = {}) {
   filter.section = section;
+  phone.metricId = phone.rcId = null;
   renderChips();
   renderSide();
   highlightDiagram(document, section);
@@ -179,37 +185,56 @@ function toast(msg: string) {
   toastTimer = window.setTimeout(() => t.classList.remove('show'), 3500);
 }
 
-function revealNew(r: SubmitResult) {
-  const signals = r.signals ?? [];
-  const target = r.stuck_point ?? r.root_cause ?? r.remediations[0] ?? signals[0];
-  if (!target) return;
-  for (const [table, rows] of [
-    ['stuck_points', r.stuck_point ? [r.stuck_point] : []],
-    ['root_causes', r.root_cause ? [r.root_cause] : []],
-    ['remediations', r.remediations],
-    ['signals', signals],
-  ] as const) {
-    for (const row of rows) store.apply({ kind: 'upsert', table, row });
-  }
+const scrollOpts = (): ScrollIntoViewOptions => ({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'center' });
+const itemEl = (id: string) => document.querySelector<HTMLElement>(`[data-item="${CSS.escape(id)}"]`);
 
-  const find = () => document.getElementById(`item-${target.id}`);
-  if (!find()) {
-    // The new item is outside the current filter or search: show its section.
-    const spId =
-      r.stuck_point?.id ??
-      r.root_cause?.stuck_point_id ??
-      signals[0]?.stuck_point_id ??
-      store.rootCauses.get(r.remediations[0]?.root_cause_id)?.stuck_point_id;
-    const sp = spId ? store.stuckPoints.get(spId) : undefined;
+/** Make a signal visible (clearing filters if needed) and bring it into view. */
+function gotoMetric(id: string) {
+  const m = store.metrics.get(id);
+  if (!m) return;
+  if (!desktop.matches) {
+    phone.metricId = id;
+    phone.rcId = null;
+    renderLibrary();
+    $('[data-library] .phone')?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' });
+    return;
+  }
+  if (!itemEl(id)) {
     filter.q = '';
     $<HTMLInputElement>('[data-search]').value = '';
-    setFilter(sp?.section ?? null);
+    setFilter(filter.section && filter.section !== m.section ? m.section : filter.section);
   }
-  const el = find();
-  // On phones new signals sit inside a collapsed list.
-  const details = el?.closest('details');
-  if (details) details.open = true;
-  el?.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'center' });
+  const el = itemEl(id);
+  el?.scrollIntoView(scrollOpts());
+  el?.classList.remove('is-target');
+  void el?.offsetWidth;
+  el?.classList.add('is-target');
+}
+
+function revealNew(r: SubmitResult) {
+  const rows = [
+    ['metrics', r.metric ? [r.metric] : []],
+    ['root_causes', r.root_cause ? [r.root_cause] : []],
+    ['metric_causes', r.link ? [r.link] : []],
+    ['remediations', r.remediations ?? []],
+  ] as const;
+  for (const [table, list] of rows) for (const row of list) store.apply({ kind: 'upsert', table, row });
+
+  const metricId = r.metric?.id ?? r.link?.metric_id ?? phone.metricId;
+  const targetId = r.metric?.id ?? r.link?.id ?? r.remediations?.[0]?.id;
+  if (!desktop.matches) {
+    if (r.metric || r.link) {
+      phone.metricId = metricId;
+      phone.rcId = null;
+    }
+    renderLibrary();
+  } else if (targetId && !itemEl(targetId)) {
+    // The new item is outside the current filter or search: show its section.
+    filter.q = '';
+    $<HTMLInputElement>('[data-search]').value = '';
+    setFilter(metricId ? (store.metrics.get(metricId)?.section ?? null) : null);
+  }
+  if (targetId) itemEl(targetId)?.scrollIntoView(scrollOpts());
   toast('Thanks! Your idea is live for everyone.');
 }
 
@@ -289,6 +314,7 @@ async function main() {
     const v = (e.target as HTMLInputElement).value;
     searchTimer = window.setTimeout(() => {
       filter.q = v;
+      phone.metricId = phone.rcId = null;
       renderLibrary();
     }, 120);
   });
@@ -317,18 +343,33 @@ async function main() {
     }
     let ctx: FormContext | null = null;
     switch (el.dataset.action) {
-      case 'add-sp':
-        ctx = { kind: 'stuck_point', section: filter.section, name: el.dataset.prefill === 'query' ? filter.q.trim().slice(0, 80) : '' };
+      case 'add-metric':
+        ctx = {
+          kind: 'metric',
+          section: (el.dataset.section || filter.section) as SectionId | null,
+          name: el.dataset.prefill === 'query' ? filter.q.trim().slice(0, 80) : '',
+        };
         break;
-      case 'add-signal':
-        ctx = { kind: 'signal', stuckPointId: el.dataset.sp! };
-        break;
-      case 'add-rc':
-        ctx = { kind: 'root_cause', stuckPointId: el.dataset.sp! };
+      case 'add-cause':
+        ctx = { kind: 'cause', metricId: el.dataset.metric! };
         break;
       case 'add-rem':
         ctx = { kind: 'remediation', rootCauseId: el.dataset.rc!, lens: el.dataset.lens as Lens | undefined };
         break;
+      case 'goto-metric':
+        gotoMetric(el.dataset.metric!);
+        return;
+      case 'open-metric':
+      case 'open-cause':
+      case 'phone-back':
+        if (el.dataset.action === 'open-metric') phone.metricId = el.dataset.metric!;
+        else if (el.dataset.action === 'open-cause') phone.rcId = el.dataset.rc!;
+        else if (phone.rcId) phone.rcId = null;
+        else phone.metricId = null;
+        renderLibrary();
+        $('[data-library] .phone')?.scrollIntoView({ block: 'start' });
+        $<HTMLElement>('[data-library] .ph-back, [data-library] .ph-item')?.focus({ preventScroll: true });
+        return;
     }
     if (ctx) forms.open(ctx, el);
   });

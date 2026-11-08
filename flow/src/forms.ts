@@ -1,16 +1,15 @@
 import type { Backend } from './backend';
 import { LENSES, LENS_LABEL, LIMITS, SHORT_NAME } from './content';
 import type { Store } from './store';
-import type { Lens, RemediationInput, SectionId, Submission, SubmitResult } from './types';
+import type { Arrow, Lens, RemediationInput, SectionId, Submission, SubmitResult } from './types';
 import { esc } from './util';
 import { normalize, validateSubmission } from './validate';
 import { myAuthorName } from './authors';
 
 export type FormContext =
-  | { kind: 'signal'; stuckPointId: string }
-  | { kind: 'remediation'; rootCauseId: string; lens?: Lens }
-  | { kind: 'root_cause'; stuckPointId: string }
-  | { kind: 'stuck_point'; section?: SectionId | null; name?: string };
+  | { kind: 'metric'; section?: SectionId | null; name?: string }
+  | { kind: 'cause'; metricId: string }
+  | { kind: 'remediation'; rootCauseId: string; lens?: Lens };
 
 const NOTICE =
   'Submissions are anonymous and public immediately. By submitting you agree your contribution can be shown, edited or reused by Najla Elmachtoub.';
@@ -47,10 +46,9 @@ function loadTurnstile(): Promise<void> {
 
 // Sample text shown in empty fields, drawn from the curated library.
 const SAMPLE = {
-  name: 'e.g. Review backs up',
-  symptom: 'e.g. Review queues grow and approvals turn into “LGTM”',
-  rootCause: 'e.g. More output arriving than reviewers can judge',
   signal: 'e.g. Review wait time',
+  looksLike: 'e.g. Review queues grow and approvals turn into “LGTM”',
+  rootCause: 'e.g. More output arriving than reviewers can judge',
   remediation: {
     people: 'e.g. Pair juniors on reviews',
     process: 'e.g. Rotate review duty',
@@ -70,14 +68,14 @@ function textField(
   name: string,
   label: string,
   max: number,
-  opts: { value?: string; multiline?: boolean; hint?: string; placeholder?: string } = {},
+  opts: { value?: string; multiline?: boolean; hint?: string; placeholder?: string; optional?: boolean } = {},
 ) {
   const id = nextId(name);
   const value = esc(opts.value ?? '');
   const ph = opts.placeholder ? ` placeholder="${esc(opts.placeholder)}"` : '';
   const input = opts.multiline
-    ? `<textarea id="${id}" name="${name}" rows="2" maxlength="${max + 20}" data-max="${max}" aria-describedby="${id}-c"${ph} required>${value}</textarea>`
-    : `<input id="${id}" name="${name}" type="text" maxlength="${max + 20}" data-max="${max}" value="${value}" aria-describedby="${id}-c"${ph} autocomplete="off" required>`;
+    ? `<textarea id="${id}" name="${name}" rows="2" maxlength="${max + 20}" data-max="${max}" aria-describedby="${id}-c"${ph}${opts.optional ? '' : ' required'}>${value}</textarea>`
+    : `<input id="${id}" name="${name}" type="text" maxlength="${max + 20}" data-max="${max}" value="${value}" aria-describedby="${id}-c"${ph} autocomplete="off"${opts.optional ? '' : ' required'}>`;
   return `<div class="field">
     <div class="field-top"><label for="${id}">${label}</label><span class="counter" id="${id}-c">0 / ${max}</span></div>
     ${opts.hint ? `<p class="hint">${opts.hint}</p>` : ''}
@@ -102,12 +100,19 @@ function remRow(n: number, lens?: Lens) {
   </fieldset>`;
 }
 
-function signalRow(value = '') {
-  const id = nextId('sig');
-  return `<div class="signal-row" data-signal>
-    <label class="sr-only" for="${id}">Signal</label>
-    <input id="${id}" type="text" maxlength="${LIMITS.signal + 20}" data-max="${LIMITS.signal}" value="${esc(value)}" placeholder="${esc(SAMPLE.signal)}" autocomplete="off">
-    <button type="button" class="link remove" data-remove-signal aria-label="Remove signal">Remove</button>
+function rootCauseField(required: boolean) {
+  return `<div class="rc-field">
+    ${textField('root_cause', `Root cause${required ? '' : ' <span class="muted">(optional)</span>'}`, LIMITS.text, {
+      multiline: true,
+      hint: 'Why it happens. Start typing to see ones already in the library.',
+      placeholder: SAMPLE.rootCause,
+      optional: !required,
+    })}
+    <div class="suggest" data-suggest hidden></div>
+    <div class="picked" data-picked hidden>
+      <p>Linking the existing root cause. Its remediations come with it.</p>
+      <button type="button" class="link" data-unpick>Write a new one instead</button>
+    </div>
   </div>`;
 }
 
@@ -140,29 +145,21 @@ export function setupForms(
   });
 
   function contextHtml(ctx: FormContext): { title: string; ctx: string } {
-    if (ctx.kind === 'signal') {
-      const sp = store.stuckPoints.get(ctx.stuckPointId)!;
+    if (ctx.kind === 'cause') {
+      const m = store.metrics.get(ctx.metricId)!;
       return {
-        title: 'Add a signal',
-        ctx: `<p class="ctx-title">${esc(sp.code)} · ${esc(sp.name)}</p><p class="muted">${esc(sp.symptom)}</p>`,
+        title: 'Add a root cause',
+        ctx: `<p class="ctx-title">${m.arrow === 'up' ? '↑' : '↓'} ${esc(m.name)}</p><p class="muted">${m.section} · ${esc(store.section(m.section).name)}</p>`,
       };
     }
     if (ctx.kind === 'remediation') {
       const rc = store.rootCauses.get(ctx.rootCauseId)!;
-      const sp = store.stuckPoints.get(rc.stuck_point_id)!;
       return {
         title: 'Add a remediation',
-        ctx: `<p class="ctx-title">${esc(sp.code)} · ${esc(sp.name)}</p><p><span class="muted">Root cause:</span> ${esc(rc.text)}</p>`,
+        ctx: `<p><span class="muted">Root cause:</span> ${esc(rc.text)}</p>`,
       };
     }
-    if (ctx.kind === 'root_cause') {
-      const sp = store.stuckPoints.get(ctx.stuckPointId)!;
-      return {
-        title: 'Add a root cause',
-        ctx: `<p class="ctx-title">${esc(sp.code)} · ${esc(sp.name)}</p><p class="muted">${esc(sp.symptom)}</p>`,
-      };
-    }
-    return { title: 'Add a new stuck point', ctx: '' };
+    return { title: 'Add a signal', ctx: '' };
   }
 
   function open(ctx: FormContext, from?: HTMLElement | null) {
@@ -170,31 +167,31 @@ export function setupForms(
     const { title, ctx: ctxHtml } = contextHtml(ctx);
 
     let fields = '';
-    if (ctx.kind === 'stuck_point') {
+    if (ctx.kind === 'metric') {
       const secId = nextId('section');
       fields += `<div class="field">
-        <label for="${secId}">Section</label>
+        <label for="${secId}">Part of the network</label>
         <select id="${secId}" name="section" required>
           <option value="">Choose A–G</option>
           ${store.sections.map((s) => `<option value="${s.id}" ${ctx.section === s.id ? 'selected' : ''}>${s.id} · ${esc(SHORT_NAME[s.id] ?? s.name)}</option>`).join('')}
         </select>
       </div>`;
-      fields += textField('name', 'Where flow gets stuck', LIMITS.name, { value: ctx.name, hint: 'A short name', placeholder: SAMPLE.name });
-      fields += textField('symptom', 'Symptom', LIMITS.symptom, { multiline: true, hint: 'What you see when it happens', placeholder: SAMPLE.symptom });
-      fields += `<div class="field"><p class="label">Signals that show it <span class="muted">(optional, up to ${LIMITS.signals})</span></p>
-        <div data-signals>${signalRow()}</div>
-        <button type="button" class="link" data-add-signal>+ Add a signal</button></div>`;
+      fields += textField('name', 'Signal', LIMITS.signal, { value: ctx.name, hint: 'Something you can watch or measure', placeholder: SAMPLE.signal });
+      fields += `<div class="field"><p class="label">Flow improves when it goes</p>
+        <div class="arrow-pick" role="radiogroup" aria-label="Flow improves when it goes">
+          <label class="tag pick"><input type="radio" name="arrow" value="down" required><span>↓ Down</span></label>
+          <label class="tag pick"><input type="radio" name="arrow" value="up" required><span>↑ Up</span></label>
+        </div></div>`;
+      fields += textField('looks_like', 'When it goes wrong <span class="muted">(optional)</span>', LIMITS.text, {
+        multiline: true,
+        hint: 'What the team sees when this signal is off',
+        placeholder: SAMPLE.looksLike,
+        optional: true,
+      });
+      fields += rootCauseField(false);
     }
-    if (ctx.kind === 'signal') {
-      fields += `<div class="field"><p class="label">Signals that show it <span class="muted">(up to ${LIMITS.signals})</span></p>
-        <p class="hint">A metric or sign you'd watch to see this happening</p>
-        <div data-signals>${signalRow()}</div>
-        <button type="button" class="link" data-add-signal>+ Add another signal</button></div>`;
-    }
-    if (ctx.kind === 'root_cause' || ctx.kind === 'stuck_point') {
-      fields += textField('root_cause', 'Root cause', LIMITS.text, { multiline: true, hint: 'Why it gets stuck', placeholder: SAMPLE.rootCause });
-    }
-    const withRems = ctx.kind !== 'signal';
+    if (ctx.kind === 'cause') fields += rootCauseField(true);
+    const remsRequired = ctx.kind === 'remediation';
 
     dialog.innerHTML = `
       <form class="sheet" novalidate>
@@ -205,8 +202,8 @@ export function setupForms(
         <div class="sheet-body">
           ${ctxHtml ? `<div class="ctx">${ctxHtml}</div>` : ''}
           ${fields}
-          ${withRems ? `<div data-rems>${remRow(1, ctx.kind === 'remediation' ? ctx.lens : undefined)}</div>
-          <button type="button" class="link" data-add-rem>+ Add another remediation</button>` : ''}
+          <div data-rems>${remsRequired ? remRow(1, ctx.kind === 'remediation' ? ctx.lens : undefined) : ''}</div>
+          <button type="button" class="link" data-add-rem>${remsRequired ? '+ Add another remediation' : '+ Add a remediation <span class="muted">(optional)</span>'}</button>
           <p class="notice">You'll appear as <strong>${esc(myAuthorName())}</strong>. ${NOTICE}</p>
           <div class="turnstile" data-turnstile></div>
           <p class="form-error" role="alert" data-error></p>
@@ -223,7 +220,13 @@ export function setupForms(
     document.body.classList.add('sheet-open');
     dialog.showModal();
     const first = form.querySelector<HTMLElement>(
-      ctx.kind === 'remediation' ? (ctx.lens ? 'textarea' : 'input[type=radio]') : 'select, input[type=text], textarea',
+      ctx.kind === 'remediation'
+        ? ctx.lens
+          ? 'textarea'
+          : 'input[type=radio]'
+        : ctx.kind === 'metric' && ctx.section
+          ? 'input[name=name]'
+          : 'select, input[type=text], textarea',
     );
     first?.focus();
 
@@ -247,6 +250,49 @@ export function setupForms(
     }
   }
 
+  // Root causes already in the library that match what's being typed.
+  function suggest(form: HTMLFormElement, ctx: FormContext) {
+    const box = form.querySelector<HTMLElement>('[data-suggest]');
+    const ta = form.querySelector<HTMLTextAreaElement>('[name=root_cause]');
+    if (!box || !ta || form.dataset.rcId) return;
+    const linked = new Set(ctx.kind === 'cause' ? store.causesOf(ctx.metricId).map((c) => c.rc.id) : []);
+    const found = store.findRootCauses(ta.value);
+    box.hidden = !found.length;
+    box.innerHTML = found.length
+      ? `<p class="hint">Already in the library. Pick one to link it instead of writing a copy:</p>
+        <ul>${found
+          .map((rc) =>
+            linked.has(rc.id)
+              ? `<li><span class="sugg sugg-done">${esc(rc.text)} <span class="muted">· already under this signal</span></span></li>`
+              : `<li><button type="button" class="sugg" data-pick="${rc.id}">${esc(rc.text)}</button></li>`,
+          )
+          .join('')}</ul>`
+      : '';
+  }
+
+  function pick(form: HTMLFormElement, rcId: string) {
+    const rc = store.rootCauses.get(rcId);
+    const ta = form.querySelector<HTMLTextAreaElement>('[name=root_cause]');
+    if (!rc || !ta) return;
+    form.dataset.rcId = rcId;
+    ta.value = rc.text;
+    ta.readOnly = true;
+    updateCounter(ta);
+    form.querySelector<HTMLElement>('[data-suggest]')!.hidden = true;
+    form.querySelector<HTMLElement>('[data-picked]')!.hidden = false;
+    form.querySelector<HTMLElement>('[data-unpick]')!.focus();
+  }
+
+  function unpick(form: HTMLFormElement) {
+    const ta = form.querySelector<HTMLTextAreaElement>('[name=root_cause]')!;
+    delete form.dataset.rcId;
+    ta.readOnly = false;
+    ta.value = '';
+    updateCounter(ta);
+    form.querySelector<HTMLElement>('[data-picked]')!.hidden = true;
+    ta.focus();
+  }
+
   function wire(form: HTMLFormElement, ctx: FormContext) {
     const rems = form.querySelector<HTMLElement>('[data-rems]');
     const renumber = () => {
@@ -254,9 +300,11 @@ export function setupForms(
       const rows = rems.querySelectorAll('[data-rem]');
       rows.forEach((row, i) => {
         row.querySelector('[data-n]')!.textContent = String(i + 1);
-        (row.querySelector('[data-remove]') as HTMLElement).hidden = rows.length === 1;
+        (row.querySelector('[data-remove]') as HTMLElement).hidden = ctx.kind === 'remediation' && rows.length === 1;
       });
-      (form.querySelector('[data-add-rem]') as HTMLElement).hidden = rows.length >= LIMITS.remediations;
+      const add = form.querySelector('[data-add-rem]') as HTMLElement;
+      add.hidden = rows.length >= LIMITS.remediations;
+      if (ctx.kind !== 'remediation' && rows.length) add.innerHTML = '+ Add another remediation';
     };
     renumber();
 
@@ -268,6 +316,7 @@ export function setupForms(
         const ta = t.closest('[data-rem]')?.querySelector('textarea');
         if (ta) ta.placeholder = SAMPLE.remediation[t.value as Lens];
       }
+      if (t.name === 'root_cause') suggest(form, ctx);
       showError(form, '');
     });
     form.querySelectorAll<HTMLInputElement>('[data-max]').forEach(updateCounter);
@@ -286,20 +335,8 @@ export function setupForms(
         renumber();
         (form.querySelector('[data-add-rem]') as HTMLElement).focus();
       }
-      if (t.hasAttribute('data-add-signal')) {
-        const box = form.querySelector('[data-signals]')!;
-        if (box.children.length < LIMITS.signals) {
-          box.insertAdjacentHTML('beforeend', signalRow());
-          (box.lastElementChild!.querySelector('input') as HTMLElement).focus();
-        }
-        t.hidden = box.children.length >= LIMITS.signals;
-      }
-      if (t.hasAttribute('data-remove-signal')) {
-        const box = form.querySelector('[data-signals]')!;
-        if (box.children.length > 1) t.closest('[data-signal]')!.remove();
-        else (t.closest('[data-signal]')!.querySelector('input') as HTMLInputElement).value = '';
-        (form.querySelector('[data-add-signal]') as HTMLElement).hidden = false;
-      }
+      if (t.dataset.pick) pick(form, t.dataset.pick);
+      if (t.hasAttribute('data-unpick')) unpick(form);
     });
 
     form.addEventListener('submit', async (e) => {
@@ -346,18 +383,19 @@ function collect(form: HTMLFormElement, ctx: FormContext): Submission {
     lens: ((row.querySelector('input[type=radio]:checked') as HTMLInputElement | null)?.value ?? '') as Lens,
     text: (row.querySelector('textarea') as HTMLTextAreaElement).value,
   }));
-  const signals = [...form.querySelectorAll<HTMLInputElement>('[data-signal] input')].map((i) => i.value);
-  if (ctx.kind === 'signal') return { type: 'signal', stuck_point_id: ctx.stuckPointId, signals };
   if (ctx.kind === 'remediation') return { type: 'remediation', root_cause_id: ctx.rootCauseId, remediations };
-  if (ctx.kind === 'root_cause') {
-    return { type: 'root_cause', stuck_point_id: ctx.stuckPointId, root_cause: val('root_cause'), remediations };
+  if (ctx.kind === 'cause') {
+    const picked = form.dataset.rcId;
+    return picked
+      ? { type: 'cause', metric_id: ctx.metricId, root_cause_id: picked, remediations }
+      : { type: 'cause', metric_id: ctx.metricId, root_cause: val('root_cause'), remediations };
   }
   return {
-    type: 'stuck_point',
+    type: 'metric',
     section: val('section') as SectionId,
+    arrow: ((form.querySelector('input[name=arrow]:checked') as HTMLInputElement | null)?.value ?? '') as Arrow,
     name: val('name'),
-    symptom: val('symptom'),
-    signals,
+    looks_like: val('looks_like'),
     root_cause: val('root_cause'),
     remediations,
   };
@@ -378,7 +416,7 @@ function focusInvalid(form: HTMLFormElement) {
   const bad = [...form.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>('select, input[type=text][required], textarea, [aria-invalid=true]')].find(
     (el) => el.getAttribute('aria-invalid') === 'true' || (el.required && !el.value.trim()),
   );
-  const radios = [...form.querySelectorAll('[data-rem]')].find((row) => !row.querySelector('input[type=radio]:checked'));
+  const radios = [...form.querySelectorAll('[data-rem], .arrow-pick')].find((row) => !row.querySelector('input[type=radio]:checked'));
   (bad ?? (radios?.querySelector('input[type=radio]') as HTMLElement | undefined))?.focus();
 }
 

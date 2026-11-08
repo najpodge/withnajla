@@ -1,10 +1,14 @@
 // Loads src/data/seed.json into Supabase with the service role key.
-// Idempotent: sections upsert on id and stuck points on code. Curated root
-// causes and remediations (source = 'najla') are matched to existing rows by
-// their order under each stuck point / root cause and updated in place, so
-// changed wording never creates a duplicate. Seed items beyond the existing
-// rows are inserted. It never deletes a row, never touches community rows and
-// never touches `hidden`, so moderation survives a re-seed.
+//
+// Idempotent and non-destructive:
+// - sections upsert on id
+// - curated signals (table `metrics`) are matched to existing curated rows by
+//   their order within each section and updated in place
+// - root causes are matched by text; new ones are inserted
+// - curated remediations are matched by their order under each root cause
+// - signal → root cause links are added when missing
+// It never deletes a row, never touches community rows and never touches
+// `hidden`, so moderation survives a re-seed.
 //
 //   npm run seed        (reads SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY from .env)
 
@@ -33,91 +37,102 @@ function check<T>(label: string, res: { data: T | null; error: { message: string
   return res.data as T;
 }
 
-// Existing curated children of a parent, in curated order.
-async function curated(table: 'root_causes' | 'remediations', parentCol: string, parentId: string) {
-  return check(
-    `${table} for ${parentId}`,
-    await db.from(table).select('id').eq(parentCol, parentId).eq('source', 'najla').order('created_at').order('id'),
-  ) as { id: string }[];
-}
-
-// Update the i-th existing curated row, or insert a new one; returns its id.
-async function put(table: 'root_causes' | 'remediations', existing: { id: string }[], i: number, row: Record<string, unknown>, label: string) {
-  const res = existing[i]
-    ? await db.from(table).update(row).eq('id', existing[i].id).select('id')
-    : await db.from(table).insert({ ...row, source: 'najla' }).select('id');
-  return (check(label, res) as { id: string }[])[0].id;
-}
+type Id = { id: string };
 
 async function main() {
   check(
     'sections',
     await db.from('sections').upsert(
-      seed.sections.map((s, i) => ({
-        id: s.id,
-        name: s.name,
-        description: s.description,
-        signals: s.signals,
-        sort: i,
-      })),
+      seed.sections.map((s, i) => ({ id: s.id, name: s.name, description: s.description, signals: s.signals, sort: i })),
       { onConflict: 'id' },
     ),
   );
 
-  let rcCount = 0;
+  // Root causes and their remediations.
+  const rcIds = new Map<string, string>();
   let remCount = 0;
   let leftover = 0;
+  for (const rc of seed.root_causes) {
+    const found = check(
+      `root cause "${rc.text}"`,
+      await db.from('root_causes').select('id').ilike('text', rc.text.replace(/[%_\\]/g, '\\$&')),
+    ) as Id[];
+    const rcId = found[0]
+      ? found[0].id
+      : (check(
+          `root cause "${rc.text}"`,
+          await db.from('root_causes').insert({ text: rc.text, source: 'najla', created_at: stamp() }).select('id'),
+        ) as Id[])[0].id;
+    rcIds.set(rc.text, rcId);
 
-  for (const sp of seed.stuck_points) {
-    const [spRow] = check(
-      `stuck point ${sp.code}`,
-      await db
-        .from('stuck_points')
-        .upsert(
-          {
-            section: sp.section,
-            code: sp.code,
-            name: sp.name,
-            symptom: sp.symptom,
-            signals: sp.signals,
-            source: 'najla',
-            created_at: stamp(),
-          },
-          { onConflict: 'code' },
-        )
-        .select('id'),
-    ) as { id: string }[];
-
-    const rcs = await curated('root_causes', 'stuck_point_id', spRow.id);
-    leftover += Math.max(0, rcs.length - sp.root_causes.length);
-
-    for (const [i, rc] of sp.root_causes.entries()) {
-      const rcId = await put(
-        'root_causes',
-        rcs,
-        i,
-        { stuck_point_id: spRow.id, text: rc.text, created_at: stamp() },
-        `${sp.code} root cause "${rc.text}"`,
+    const rems = check(
+      `remediations for "${rc.text}"`,
+      await db.from('remediations').select('id').eq('root_cause_id', rcId).eq('source', 'najla').order('created_at').order('id'),
+    ) as Id[];
+    leftover += Math.max(0, rems.length - rc.remediations.length);
+    for (const [j, r] of rc.remediations.entries()) {
+      const row = { root_cause_id: rcId, lens: r.lens, text: r.text, created_at: stamp() };
+      check(
+        `remediation "${r.text}"`,
+        rems[j]
+          ? await db.from('remediations').update(row).eq('id', rems[j].id)
+          : await db.from('remediations').insert({ ...row, source: 'najla' }),
       );
-      rcCount++;
+      remCount++;
+    }
+  }
 
-      const rems = await curated('remediations', 'root_cause_id', rcId);
-      leftover += Math.max(0, rems.length - rc.remediations.length);
-      for (const [j, r] of rc.remediations.entries()) {
-        await put(
-          'remediations',
-          rems,
-          j,
-          { root_cause_id: rcId, lens: r.lens, text: r.text, created_at: stamp() },
-          `${sp.code} remediation "${r.text}"`,
-        );
-        remCount++;
+  // Signals, section by section, and their links to root causes.
+  let linkCount = 0;
+  for (const section of seed.sections) {
+    const mine = seed.signals.filter((s) => s.section === section.id);
+    const existing = check(
+      `signals in ${section.id}`,
+      await db.from('metrics').select('id').eq('section', section.id).eq('source', 'najla').order('sort').order('created_at'),
+    ) as Id[];
+    leftover += Math.max(0, existing.length - mine.length);
+
+    for (const [i, s] of mine.entries()) {
+      const row = {
+        section: s.section,
+        arrow: s.arrow,
+        name: s.name,
+        looks_like: s.looks_like || null,
+        on_deck: s.on_deck,
+        sort: seed.signals.indexOf(s),
+        created_at: stamp(),
+      };
+      const metricId = existing[i]
+        ? (check(`signal "${s.name}"`, await db.from('metrics').update(row).eq('id', existing[i].id).select('id')) as Id[])[0].id
+        : (check(`signal "${s.name}"`, await db.from('metrics').insert({ ...row, source: 'najla' }).select('id')) as Id[])[0].id;
+
+      const links = check(
+        `links for "${s.name}"`,
+        await db.from('metric_causes').select('id, root_cause_id, source').eq('metric_id', metricId),
+      ) as { id: string; root_cause_id: string; source: string }[];
+      for (const text of s.root_causes) {
+        const rcId = rcIds.get(text);
+        if (!rcId) {
+          console.error(`Signal "${s.name}" lists an unknown root cause: "${text}"`);
+          process.exit(1);
+        }
+        const link = links.find((l) => l.root_cause_id === rcId);
+        const created_at = stamp();
+        if (!link) {
+          check(
+            `link "${s.name}" → "${text}"`,
+            await db.from('metric_causes').insert({ metric_id: metricId, root_cause_id: rcId, source: 'najla', created_at }),
+          );
+        } else if (link.source === 'najla') {
+          check(`link "${s.name}" → "${text}"`, await db.from('metric_causes').update({ created_at }).eq('id', link.id));
+        }
+        linkCount++;
       }
     }
   }
 
   console.log(
-    `Seeded ${seed.sections.length} sections, ${seed.stuck_points.length} stuck points, ${rcCount} root causes, ${remCount} remediations.`,
+    `Seeded ${seed.sections.length} sections, ${seed.signals.length} signals, ${seed.root_causes.length} root causes, ${remCount} remediations, ${linkCount} links.`,
   );
   if (leftover) console.log(`${leftover} curated rows have no match in seed.json and were left as they are.`);
 }

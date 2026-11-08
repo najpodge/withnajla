@@ -1,6 +1,7 @@
 export type Source = 'najla' | 'community';
 export type Lens = 'people' | 'process' | 'tech';
 export type SectionId = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G';
+export type Arrow = 'up' | 'down';
 
 export interface Section {
   id: SectionId;
@@ -18,16 +19,23 @@ interface Row {
   hidden?: boolean;
 }
 
-export interface StuckPoint extends Row {
+/** A signal: a measurement on one part of the network (table `metrics`). */
+export interface Metric extends Row {
   section: SectionId;
-  code: string;
+  arrow: Arrow;
   name: string;
-  symptom: string;
-  signals: string[];
+  looks_like: string | null;
+  on_deck: boolean;
+  sort: number;
+}
+
+/** Links a signal to a root cause that can explain it. */
+export interface MetricCause extends Row {
+  metric_id: string;
+  root_cause_id: string;
 }
 
 export interface RootCause extends Row {
-  stuck_point_id: string;
   text: string;
 }
 
@@ -37,20 +45,14 @@ export interface Remediation extends Row {
   text: string;
 }
 
-/** A signal added to an existing stuck point after it was created. */
-export interface Signal extends Row {
-  stuck_point_id: string;
-  text: string;
-}
-
-export type TableName = 'stuck_points' | 'root_causes' | 'remediations' | 'signals';
+export type TableName = 'metrics' | 'metric_causes' | 'root_causes' | 'remediations';
 
 export interface Snapshot {
   sections: Section[];
-  stuck_points: StuckPoint[];
+  metrics: Metric[];
+  metric_causes: MetricCause[];
   root_causes: RootCause[];
   remediations: Remediation[];
-  signals: Signal[];
 }
 
 export interface RemediationInput {
@@ -59,27 +61,26 @@ export interface RemediationInput {
 }
 
 export type Submission =
-  | { type: 'signal'; stuck_point_id: string; signals: string[] }
-  | { type: 'remediation'; root_cause_id: string; remediations: RemediationInput[] }
-  | { type: 'root_cause'; stuck_point_id: string; root_cause: string; remediations: RemediationInput[] }
   | {
-      type: 'stuck_point';
+      type: 'metric';
       section: SectionId;
+      arrow: Arrow;
       name: string;
-      symptom: string;
-      signals: string[];
+      looks_like: string;
       root_cause: string;
       remediations: RemediationInput[];
-    };
+    }
+  | { type: 'cause'; metric_id: string; root_cause_id?: string; root_cause?: string; remediations: RemediationInput[] }
+  | { type: 'remediation'; root_cause_id: string; remediations: RemediationInput[] };
 
 export interface SubmitResult {
-  stuck_point: StuckPoint | null;
-  root_cause: RootCause | null;
+  metric?: Metric | null;
+  root_cause?: RootCause | null;
+  link?: MetricCause | null;
   remediations: Remediation[];
-  signals: Signal[];
 }
 
 export type ChangeEvent =
-  | { kind: 'upsert'; table: TableName; row: StuckPoint | RootCause | Remediation | Signal }
+  | { kind: 'upsert'; table: TableName; row: Metric | MetricCause | RootCause | Remediation }
   | { kind: 'remove'; table: TableName; id: string }
   | { kind: 'resync' };

@@ -2,11 +2,11 @@ import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js';
 import seed from './data/seed.json';
 import type {
   ChangeEvent,
+  Metric,
+  MetricCause,
   Remediation,
   RootCause,
-  Signal,
   Snapshot,
-  StuckPoint,
   Submission,
   SubmitResult,
   TableName,
@@ -22,7 +22,7 @@ export interface Backend {
   submit(sub: Submission, turnstileToken: string | null): Promise<SubmitResult>;
 }
 
-const TABLES: TableName[] = ['stuck_points', 'root_causes', 'remediations', 'signals'];
+const TABLES: TableName[] = ['metrics', 'metric_causes', 'root_causes', 'remediations'];
 const URL_ = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
@@ -62,18 +62,17 @@ async function liveBackend(url: string, key: string): Promise<Backend> {
     needsTurnstile: true,
 
     async load() {
-      const [sections, stuck_points, root_causes, remediations, signals] = await Promise.all([
+      const [sections, metrics, metric_causes, root_causes, remediations] = await Promise.all([
         db.from('sections').select('*').order('sort').then((r) => {
           if (r.error) throw r.error;
           return r.data;
         }),
-        all<StuckPoint>('stuck_points'),
-        all<RootCause>('root_causes'),
+        all<Metric>('metrics'),
+        all<MetricCause>('metric_causes'),
+        all<RootCause>('root_causes', 'id, created_at, text, source, author, hidden'),
         all<Remediation>('remediations'),
-        // Added in a later migration; the page still works without it.
-        all<Signal>('signals').catch(() => [] as Signal[]),
       ]);
-      return { sections, stuck_points, root_causes, remediations, signals } as Snapshot;
+      return { sections, metrics, metric_causes, root_causes, remediations } as Snapshot;
     },
 
     subscribe(onChange) {
@@ -127,39 +126,43 @@ async function liveBackend(url: string, key: string): Promise<Backend> {
 // between tabs of this browser so realtime can be tried locally.
 // ---------------------------------------------------------------------------
 
-const DEMO_KEY = 'flow-demo-community-v1';
+const DEMO_KEY = 'flow-demo-community-v2';
 
 function demoBackend(): Backend {
   const base = Date.parse('2026-11-01T00:00:00Z');
   let tick = 0;
   const stamp = () => new Date(base + tick++ * 1000).toISOString();
   const id = () => crypto.randomUUID();
+  const najla = () => ({ created_at: stamp(), source: 'najla' as const });
 
   const snap: Snapshot = {
     sections: seed.sections.map((s, i) => ({ ...s, sort: i })) as Snapshot['sections'],
-    stuck_points: [],
+    metrics: [],
+    metric_causes: [],
     root_causes: [],
     remediations: [],
-    signals: [],
   };
-  for (const sp of seed.stuck_points) {
-    const spId = `sp-${sp.code}`;
-    snap.stuck_points.push({
-      id: spId, created_at: stamp(), source: 'najla',
-      section: sp.section as StuckPoint['section'], code: sp.code, name: sp.name, symptom: sp.symptom, signals: sp.signals,
+  const rcByText = new Map<string, string>();
+  seed.root_causes.forEach((rc, i) => {
+    const rcId = `rc-${i}`;
+    rcByText.set(rc.text, rcId);
+    snap.root_causes.push({ id: rcId, ...najla(), text: rc.text });
+    rc.remediations.forEach((r, j) => {
+      snap.remediations.push({ id: `${rcId}-r${j}`, ...najla(), root_cause_id: rcId, lens: r.lens as Remediation['lens'], text: r.text });
     });
-    sp.root_causes.forEach((rc, i) => {
-      const rcId = `${spId}-rc${i}`;
-      snap.root_causes.push({ id: rcId, created_at: stamp(), source: 'najla', stuck_point_id: spId, text: rc.text });
-      rc.remediations.forEach((r, j) => {
-        snap.remediations.push({
-          id: `${rcId}-r${j}`, created_at: stamp(), source: 'najla', root_cause_id: rcId, lens: r.lens as Remediation['lens'], text: r.text,
-        });
-      });
+  });
+  seed.signals.forEach((s, i) => {
+    const mId = `m-${i}`;
+    snap.metrics.push({
+      id: mId, ...najla(), section: s.section as Metric['section'], arrow: s.arrow as Metric['arrow'],
+      name: s.name, looks_like: s.looks_like || null, on_deck: s.on_deck, sort: i,
     });
-  }
+    s.root_causes.forEach((t, j) => {
+      snap.metric_causes.push({ id: `${mId}-l${j}`, ...najla(), metric_id: mId, root_cause_id: rcByText.get(t)! });
+    });
+  });
 
-  type Stored = { table: TableName; row: StuckPoint | RootCause | Remediation | Signal };
+  type Stored = { table: TableName; row: Metric | MetricCause | RootCause | Remediation };
   const readStored = (): Stored[] => {
     try {
       return JSON.parse(localStorage.getItem(DEMO_KEY) || '[]');
@@ -199,55 +202,51 @@ function demoBackend(): Backend {
       });
     },
 
+    // Mirrors submit_metric / submit_idea in the database.
     async submit(sub) {
       const err = validateSubmission(sub);
       if (err) throw new Error(err);
       await new Promise((r) => setTimeout(r, 300));
-      const now = () => new Date().toISOString();
-      const out: SubmitResult = { stuck_point: null, root_cause: null, remediations: [], signals: [] };
-      if (sub.type === 'signal') {
-        const sp = snap.stuck_points.find((s) => s.id === sub.stuck_point_id)!;
-        for (const text of sub.signals) {
-          const known = [...sp.signals, ...snap.signals.filter((s) => s.stuck_point_id === sp.id).map((s) => s.text)];
-          if (known.some((k) => k.toLowerCase() === text.toLowerCase())) throw new Error('That signal is already listed');
-          out.signals.push({ id: id(), created_at: now(), source: 'community', author: myAuthorName(), stuck_point_id: sp.id, text });
-        }
-        const batch: Stored[] = out.signals.map((row) => ({ table: 'signals' as const, row }));
-        batch.forEach(apply);
-        store([...readStored(), ...batch]);
-        bc?.postMessage(batch);
-        return out;
-      }
-      let spId = sub.type === 'root_cause' ? sub.stuck_point_id : '';
-      let rcId = sub.type === 'remediation' ? sub.root_cause_id : '';
+      const community = () => ({ id: id(), created_at: new Date().toISOString(), source: 'community' as const, author: myAuthorName() });
+      const out: SubmitResult = { metric: null, root_cause: null, link: null, remediations: [] };
+      const batch: Stored[] = [];
 
-      if (sub.type === 'stuck_point') {
-        const n = Math.max(0, ...snap.stuck_points.filter((s) => s.section === sub.section).map((s) => +s.code.slice(1))) + 1;
-        spId = id();
-        out.stuck_point = {
-          id: spId, created_at: now(), source: 'community', author: myAuthorName(), section: sub.section, code: sub.section + n,
-          name: sub.name, symptom: sub.symptom, signals: sub.signals,
-        };
-      }
-      if (sub.type !== 'remediation') {
-        if (snap.root_causes.some((r) => r.stuck_point_id === spId && r.text === sub.root_cause)) {
-          throw new Error('That idea is already in the library.');
+      let rcId = sub.type === 'metric' ? '' : sub.root_cause_id ?? '';
+      let metricId = sub.type === 'cause' ? sub.metric_id : '';
+
+      if (sub.type === 'metric') {
+        if (snap.metrics.some((m) => m.section === sub.section && m.name.toLowerCase() === sub.name.toLowerCase())) {
+          throw new Error('That signal is already listed in this section');
         }
-        rcId = id();
-        out.root_cause = { id: rcId, created_at: now(), source: 'community', author: myAuthorName(), stuck_point_id: spId, text: sub.root_cause };
+        out.metric = { ...community(), section: sub.section, arrow: sub.arrow, name: sub.name, looks_like: sub.looks_like || null, on_deck: false, sort: 1000 };
+        metricId = out.metric.id;
+        batch.push({ table: 'metrics', row: out.metric });
+      }
+      if (sub.type !== 'remediation' && !rcId && sub.root_cause) {
+        const same = snap.root_causes.find((r) => r.text.toLowerCase() === sub.root_cause!.toLowerCase());
+        if (same) rcId = same.id;
+        else {
+          out.root_cause = { ...community(), text: sub.root_cause };
+          rcId = out.root_cause.id;
+          batch.push({ table: 'root_causes', row: out.root_cause });
+        }
+      }
+      if (sub.type !== 'remediation' && rcId) {
+        out.root_cause ??= snap.root_causes.find((r) => r.id === rcId) ?? null;
+        if (snap.metric_causes.some((l) => l.metric_id === metricId && l.root_cause_id === rcId)) {
+          if (!sub.remediations.length) throw new Error('That root cause is already listed under this signal');
+        } else {
+          out.link = { ...community(), metric_id: metricId, root_cause_id: rcId };
+          batch.push({ table: 'metric_causes', row: out.link });
+        }
       }
       for (const r of sub.remediations) {
-        if (snap.remediations.some((x) => x.root_cause_id === rcId && x.lens === r.lens && x.text === r.text)) {
-          throw new Error('That idea is already in the library.');
-        }
-        out.remediations.push({ id: id(), created_at: now(), source: 'community', author: myAuthorName(), root_cause_id: rcId, lens: r.lens, text: r.text });
+        if (snap.remediations.some((x) => x.root_cause_id === rcId && x.lens === r.lens && x.text === r.text)) continue;
+        const row: Remediation = { ...community(), root_cause_id: rcId, lens: r.lens, text: r.text };
+        out.remediations.push(row);
+        batch.push({ table: 'remediations', row });
       }
 
-      const batch: Stored[] = [
-        ...(out.stuck_point ? [{ table: 'stuck_points' as const, row: out.stuck_point }] : []),
-        ...(out.root_cause ? [{ table: 'root_causes' as const, row: out.root_cause }] : []),
-        ...out.remediations.map((row) => ({ table: 'remediations' as const, row })),
-      ];
       batch.forEach(apply);
       store([...readStored(), ...batch]);
       bc?.postMessage(batch);
