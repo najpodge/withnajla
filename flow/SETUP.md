@@ -32,6 +32,7 @@ Run every command below from the `flow` folder: `cd ~/withnajla/flow`.
 - [ ] SQL Editor → New query → paste the **entire contents** of the one file `~/withnajla/flow/supabase/migrations/20261101000000_init.sql` (about 290 lines) → Run. To copy it: `pbcopy < ~/withnajla/flow/supabase/migrations/20261101000000_init.sql`. You should see "Success. No rows returned." Run it only once; a second run fails because the tables already exist.
 - [ ] New query → paste `~/withnajla/flow/supabase/migrations/20261102000000_service_role_grants.sql` (one statement) → Run. It's safe to run again.
 - [ ] New query → paste `~/withnajla/flow/supabase/migrations/20261103000000_signals.sql` → Run, once. It lets people add signals to existing stuck points.
+- [x] New query → paste `~/withnajla/flow/supabase/migrations/20261108000000_authors.sql` → Run, once. It gives community additions a random name like "Quiet Heron".
 - [ ] Project Settings → Realtime: check that public channel access is allowed (the default). Hidden rows disappear live through a public broadcast.
 - [ ] Copy the Project URL, the anon/publishable key and the service role/secret key.
 
