@@ -85,24 +85,45 @@ export class Store {
     return [...this.remediations.values()].filter((r) => r.root_cause_id === rcId).sort(byTime);
   }
 
-  /** Root causes whose text contains the query, for "link an existing one". */
-  findRootCauses(q: string, limit = 6): RootCause[] {
-    const needle = q.trim().toLowerCase();
-    if (needle.length < 3) return [];
-    const words = needle.split(/\s+/).filter((w) => w.length > 2);
-    const score = (t: string) => {
-      const h = t.toLowerCase();
-      if (h.includes(needle)) return 2;
-      return words.length && words.every((w) => h.includes(w)) ? 1 : 0;
+  /**
+   * Every root cause, ranked by how well it matches the query, word by word.
+   * Words match after trimming common endings, so "reviewers" finds "review" and "owns" finds "owner".
+   * Remediation text counts too, at half weight. No query: alphabetical.
+   */
+  rankRootCauses(q: string): { rc: RootCause; score: number }[] {
+    const all = [...this.rootCauses.values()];
+    const qWords = words(q);
+    if (!qWords.length) {
+      return all.map((rc) => ({ rc, score: 0 })).sort((a, b) => a.rc.text.localeCompare(b.rc.text));
+    }
+    const hits = (text: string) => {
+      const tWords = words(text);
+      return qWords.filter((w) => tWords.some((t) => t.startsWith(w) || w.startsWith(t))).length;
     };
-    return [...this.rootCauses.values()]
-      .map((rc) => ({ rc, s: score(rc.text) }))
-      .filter((x) => x.s > 0)
-      .sort((a, b) => b.s - a.s || a.rc.text.length - b.rc.text.length)
-      .slice(0, limit)
-      .map((x) => x.rc);
+    const needle = q.trim().toLowerCase();
+    return all
+      .map((rc) => {
+        const remHits = Math.max(0, ...this.remediationsOf(rc.id).map((r) => hits(r.text)));
+        const score = hits(rc.text) + remHits / 2 + (rc.text.toLowerCase().includes(needle) ? 2 : 0);
+        return { rc, score };
+      })
+      .sort((a, b) => b.score - a.score || a.rc.text.localeCompare(b.rc.text));
   }
 }
+
+const STOP = new Set(
+  'the and for with are not but too its that this from into than they them their have has had can cant don dont doesn get got our your was were who what when how why all any out off own one more less very just'.split(' '),
+);
+const stem = (w: string) => {
+  const s = w.replace(/(ings?|ers?|ed|es|ly|s)$/, '');
+  return s.length >= 3 ? s : w;
+};
+const words = (t: string) =>
+  t
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((w) => w.length >= 3 && !STOP.has(w))
+    .map(stem);
 
 function byTime(a: { created_at: string; id: string }, b: { created_at: string; id: string }) {
   return a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id);

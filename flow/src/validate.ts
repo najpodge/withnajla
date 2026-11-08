@@ -15,16 +15,18 @@ export function validateSubmission(sub: Submission): string | null {
   if (sub.type === 'metric') {
     if (!/^[A-G]$/.test(sub.section)) return 'Pick a section A–G';
     if (sub.arrow !== 'up' && sub.arrow !== 'down') return 'Pick whether it should go up or down';
-    const e =
-      field(sub.name, 'Signal', LIMITS.signal) ??
-      optional(sub.looks_like, 'When it goes wrong', LIMITS.text) ??
-      optional(sub.root_cause, 'Root cause', LIMITS.text);
+    const e = field(sub.name, 'Signal', LIMITS.signal) ?? optional(sub.looks_like, 'When it goes wrong', LIMITS.text);
     if (e) return e;
-    if (sub.remediations.length && !sub.root_cause.trim()) return 'Add a root cause for these remediations';
   }
-  if (sub.type === 'cause' && !sub.root_cause_id) {
-    const e = field(sub.root_cause ?? '', 'Root cause', LIMITS.text);
+  if (sub.type !== 'remediation') {
+    const e = optional(sub.root_cause, 'Root cause', LIMITS.text);
     if (e) return e;
+    const hasNew = !!sub.root_cause.trim();
+    if (sub.type === 'cause' && !hasNew && !sub.root_cause_ids.length) return 'Pick or write at least one root cause';
+    if (sub.root_cause_ids.length > 20) return 'Pick at most 20 root causes at a time';
+    if (sub.remediations.length && !hasNew && sub.root_cause_ids.length !== 1) {
+      return 'Remediations need a single root cause: write a new one, or pick just one';
+    }
   }
   if (sub.type === 'remediation' && sub.remediations.length === 0) return 'Add at least one remediation';
   if (sub.remediations.length > LIMITS.remediations) return `At most ${LIMITS.remediations} remediations at a time`;
@@ -48,10 +50,6 @@ export function normalize(sub: Submission): Submission {
       remediations,
     };
   }
-  if (sub.type === 'cause') {
-    return sub.root_cause_id
-      ? { type: 'cause', metric_id: sub.metric_id, root_cause_id: sub.root_cause_id, remediations }
-      : { type: 'cause', metric_id: sub.metric_id, root_cause: (sub.root_cause ?? '').trim(), remediations };
-  }
+  if (sub.type === 'cause') return { ...sub, root_cause: sub.root_cause.trim(), remediations };
   return { ...sub, remediations };
 }

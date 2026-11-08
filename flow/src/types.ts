@@ -67,16 +67,17 @@ export type Submission =
       arrow: Arrow;
       name: string;
       looks_like: string;
+      root_cause_ids: string[];
       root_cause: string;
       remediations: RemediationInput[];
     }
-  | { type: 'cause'; metric_id: string; root_cause_id?: string; root_cause?: string; remediations: RemediationInput[] }
+  | { type: 'cause'; metric_id: string; root_cause_ids: string[]; root_cause: string; remediations: RemediationInput[] }
   | { type: 'remediation'; root_cause_id: string; remediations: RemediationInput[] };
 
 export interface SubmitResult {
   metric?: Metric | null;
-  root_cause?: RootCause | null;
-  link?: MetricCause | null;
+  root_causes?: RootCause[];
+  links?: MetricCause[];
   remediations: Remediation[];
 }
 

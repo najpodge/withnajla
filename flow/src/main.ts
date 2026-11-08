@@ -214,16 +214,17 @@ function gotoMetric(id: string) {
 function revealNew(r: SubmitResult) {
   const rows = [
     ['metrics', r.metric ? [r.metric] : []],
-    ['root_causes', r.root_cause ? [r.root_cause] : []],
-    ['metric_causes', r.link ? [r.link] : []],
+    ['root_causes', r.root_causes ?? []],
+    ['metric_causes', r.links ?? []],
     ['remediations', r.remediations ?? []],
   ] as const;
   for (const [table, list] of rows) for (const row of list) store.apply({ kind: 'upsert', table, row });
 
-  const metricId = r.metric?.id ?? r.link?.metric_id ?? phone.metricId;
-  const targetId = r.metric?.id ?? r.link?.id ?? r.remediations?.[0]?.id;
+  const link = r.links?.[0];
+  const metricId = r.metric?.id ?? link?.metric_id ?? phone.metricId;
+  const targetId = r.metric?.id ?? link?.id ?? r.remediations?.[0]?.id;
   if (!desktop.matches) {
-    if (r.metric || r.link) {
+    if (r.metric || link) {
       phone.metricId = metricId;
       phone.rcId = null;
     }

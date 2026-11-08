@@ -208,43 +208,51 @@ function demoBackend(): Backend {
       if (err) throw new Error(err);
       await new Promise((r) => setTimeout(r, 300));
       const community = () => ({ id: id(), created_at: new Date().toISOString(), source: 'community' as const, author: myAuthorName() });
-      const out: SubmitResult = { metric: null, root_cause: null, link: null, remediations: [] };
+      const out: SubmitResult = { metric: null, root_causes: [], links: [], remediations: [] };
       const batch: Stored[] = [];
-
-      let rcId = sub.type === 'metric' ? '' : sub.root_cause_id ?? '';
-      let metricId = sub.type === 'cause' ? sub.metric_id : '';
-
-      if (sub.type === 'metric') {
-        if (snap.metrics.some((m) => m.section === sub.section && m.name.toLowerCase() === sub.name.toLowerCase())) {
-          throw new Error('That signal is already listed in this section');
+      if (sub.type === 'remediation') {
+        for (const r of sub.remediations) {
+          if (snap.remediations.some((x) => x.root_cause_id === sub.root_cause_id && x.lens === r.lens && x.text === r.text)) continue;
+          const row: Remediation = { ...community(), root_cause_id: sub.root_cause_id, lens: r.lens, text: r.text };
+          out.remediations.push(row);
+          batch.push({ table: 'remediations', row });
         }
-        out.metric = { ...community(), section: sub.section, arrow: sub.arrow, name: sub.name, looks_like: sub.looks_like || null, on_deck: false, sort: 1000 };
-        metricId = out.metric.id;
-        batch.push({ table: 'metrics', row: out.metric });
-      }
-      if (sub.type !== 'remediation' && !rcId && sub.root_cause) {
-        const same = snap.root_causes.find((r) => r.text.toLowerCase() === sub.root_cause!.toLowerCase());
-        if (same) rcId = same.id;
-        else {
-          out.root_cause = { ...community(), text: sub.root_cause };
-          rcId = out.root_cause.id;
-          batch.push({ table: 'root_causes', row: out.root_cause });
+      } else {
+        let metricId = sub.type === 'cause' ? sub.metric_id : '';
+        if (sub.type === 'metric') {
+          if (snap.metrics.some((m) => m.section === sub.section && m.name.toLowerCase() === sub.name.toLowerCase())) {
+            throw new Error('That signal is already listed in this section');
+          }
+          out.metric = { ...community(), section: sub.section, arrow: sub.arrow, name: sub.name, looks_like: sub.looks_like || null, on_deck: false, sort: 1000 };
+          metricId = out.metric.id;
+          batch.push({ table: 'metrics', row: out.metric });
         }
-      }
-      if (sub.type !== 'remediation' && rcId) {
-        out.root_cause ??= snap.root_causes.find((r) => r.id === rcId) ?? null;
-        if (snap.metric_causes.some((l) => l.metric_id === metricId && l.root_cause_id === rcId)) {
-          if (!sub.remediations.length) throw new Error('That root cause is already listed under this signal');
-        } else {
-          out.link = { ...community(), metric_id: metricId, root_cause_id: rcId };
-          batch.push({ table: 'metric_causes', row: out.link });
+        const picked = [...new Set(sub.root_cause_ids)].map((rid) => snap.root_causes.find((r) => r.id === rid)!).filter(Boolean);
+        let target: RootCause | undefined = picked.length === 1 ? picked[0] : undefined;
+        if (sub.root_cause) {
+          target = snap.root_causes.find((r) => r.text.toLowerCase() === sub.root_cause.toLowerCase());
+          if (!target) {
+            target = { ...community(), text: sub.root_cause };
+            batch.push({ table: 'root_causes', row: target });
+          }
+          if (!picked.includes(target)) picked.push(target);
         }
-      }
-      for (const r of sub.remediations) {
-        if (snap.remediations.some((x) => x.root_cause_id === rcId && x.lens === r.lens && x.text === r.text)) continue;
-        const row: Remediation = { ...community(), root_cause_id: rcId, lens: r.lens, text: r.text };
-        out.remediations.push(row);
-        batch.push({ table: 'remediations', row });
+        out.root_causes = picked;
+        for (const rc of picked) {
+          if (snap.metric_causes.some((l) => l.metric_id === metricId && l.root_cause_id === rc.id)) continue;
+          const link: MetricCause = { ...community(), metric_id: metricId, root_cause_id: rc.id };
+          out.links!.push(link);
+          batch.push({ table: 'metric_causes', row: link });
+        }
+        if (sub.type === 'cause' && !out.links!.length && !sub.remediations.length) {
+          throw new Error('Those root causes are already listed under this signal');
+        }
+        for (const r of sub.remediations) {
+          if (snap.remediations.some((x) => x.root_cause_id === target!.id && x.lens === r.lens && x.text === r.text)) continue;
+          const row: Remediation = { ...community(), root_cause_id: target!.id, lens: r.lens, text: r.text };
+          out.remediations.push(row);
+          batch.push({ table: 'remediations', row });
+        }
       }
 
       batch.forEach(apply);

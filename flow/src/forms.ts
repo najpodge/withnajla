@@ -100,20 +100,22 @@ function remRow(n: number, lens?: Lens) {
   </fieldset>`;
 }
 
-function rootCauseField(required: boolean) {
-  return `<div class="rc-field">
-    ${textField('root_cause', `Root cause${required ? '' : ' <span class="muted">(optional)</span>'}`, LIMITS.text, {
-      multiline: true,
-      hint: 'Why it happens. Start typing to see ones already in the library.',
-      placeholder: SAMPLE.rootCause,
-      optional: !required,
-    })}
-    <div class="suggest" data-suggest hidden></div>
-    <div class="picked" data-picked hidden>
-      <p>Linking the existing root cause. Its remediations come with it.</p>
-      <button type="button" class="link" data-unpick>Write a new one instead</button>
-    </div>
-  </div>`;
+function rootCausePicker(required: boolean, hiddenCount: number) {
+  const id = nextId('rc-search');
+  return `<div class="field rc-picker" data-picker>
+    <p class="label">Root causes already in the library${required ? '' : ' <span class="muted">(optional)</span>'}</p>
+    <p class="hint">Tick every one that could explain this signal. Search to narrow the list.</p>
+    <label class="sr-only" for="${id}">Search root causes</label>
+    <input id="${id}" type="search" data-rc-search placeholder="Search, e.g. review, context, ownership" autocomplete="off">
+    <ul class="rc-options" data-rc-options aria-label="Root causes in the library"></ul>
+    <p class="hint picked-count" data-picked-count aria-live="polite"></p>
+    ${hiddenCount ? `<p class="hint">${hiddenCount} already under this signal ${hiddenCount === 1 ? "isn't" : "aren't"} listed.</p>` : ''}
+  </div>
+  ${textField('root_cause', 'Not in the list? Write a new root cause <span class="muted">(optional)</span>', LIMITS.text, {
+    multiline: true,
+    placeholder: SAMPLE.rootCause,
+    optional: true,
+  })}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -188,9 +190,9 @@ export function setupForms(
         placeholder: SAMPLE.looksLike,
         optional: true,
       });
-      fields += rootCauseField(false);
+      fields += rootCausePicker(false, 0);
     }
-    if (ctx.kind === 'cause') fields += rootCauseField(true);
+    if (ctx.kind === 'cause') fields += rootCausePicker(true, store.causesOf(ctx.metricId).length);
     const remsRequired = ctx.kind === 'remediation';
 
     dialog.innerHTML = `
@@ -250,47 +252,34 @@ export function setupForms(
     }
   }
 
-  // Root causes already in the library that match what's being typed.
-  function suggest(form: HTMLFormElement, ctx: FormContext) {
-    const box = form.querySelector<HTMLElement>('[data-suggest]');
-    const ta = form.querySelector<HTMLTextAreaElement>('[name=root_cause]');
-    if (!box || !ta || form.dataset.rcId) return;
-    const linked = new Set(ctx.kind === 'cause' ? store.causesOf(ctx.metricId).map((c) => c.rc.id) : []);
-    const found = store.findRootCauses(ta.value);
-    box.hidden = !found.length;
-    box.innerHTML = found.length
-      ? `<p class="hint">Already in the library. Pick one to link it instead of writing a copy:</p>
-        <ul>${found
-          .map((rc) =>
-            linked.has(rc.id)
-              ? `<li><span class="sugg sugg-done">${esc(rc.text)} <span class="muted">· already under this signal</span></span></li>`
-              : `<li><button type="button" class="sugg" data-pick="${rc.id}">${esc(rc.text)}</button></li>`,
-          )
-          .join('')}</ul>`
-      : '';
+  // The list of existing root causes, ranked by the search box. Ticked ones stay on top.
+  const ticked = new WeakMap<HTMLFormElement, Set<string>>();
+  function renderOptions(form: HTMLFormElement, ctx: FormContext) {
+    const list = form.querySelector<HTMLElement>('[data-rc-options]');
+    if (!list) return;
+    const set = ticked.get(form) ?? new Set<string>();
+    ticked.set(form, set);
+    const q = form.querySelector<HTMLInputElement>('[data-rc-search]')!.value;
+    const exclude = new Set(ctx.kind === 'cause' ? store.causesOf(ctx.metricId).map((c) => c.rc.id) : []);
+    const ranked = store.rankRootCauses(q).filter((x) => !exclude.has(x.rc.id));
+    const matched = q.trim() ? ranked.filter((x) => x.score > 0) : ranked;
+    const pinned = ranked.filter((x) => set.has(x.rc.id));
+    const rest = matched.filter((x) => !set.has(x.rc.id));
+    const opt = ({ rc }: { rc: { id: string; text: string } }) => {
+      const n = store.metricsOf(rc.id).length;
+      return `<li><label class="rc-opt"><input type="checkbox" value="${rc.id}" ${set.has(rc.id) ? 'checked' : ''}>
+        <span class="rc-opt-text">${esc(rc.text)}</span><span class="rc-opt-n">${n} signal${n === 1 ? '' : 's'}</span></label></li>`;
+    };
+    list.innerHTML =
+      pinned.map(opt).join('') +
+      (q.trim() && !rest.length ? `<li class="rc-none">No close match. Write it as a new root cause below.</li>` : rest.map(opt).join(''));
+    updatePicked(form);
   }
 
-  function pick(form: HTMLFormElement, rcId: string) {
-    const rc = store.rootCauses.get(rcId);
-    const ta = form.querySelector<HTMLTextAreaElement>('[name=root_cause]');
-    if (!rc || !ta) return;
-    form.dataset.rcId = rcId;
-    ta.value = rc.text;
-    ta.readOnly = true;
-    updateCounter(ta);
-    form.querySelector<HTMLElement>('[data-suggest]')!.hidden = true;
-    form.querySelector<HTMLElement>('[data-picked]')!.hidden = false;
-    form.querySelector<HTMLElement>('[data-unpick]')!.focus();
-  }
-
-  function unpick(form: HTMLFormElement) {
-    const ta = form.querySelector<HTMLTextAreaElement>('[name=root_cause]')!;
-    delete form.dataset.rcId;
-    ta.readOnly = false;
-    ta.value = '';
-    updateCounter(ta);
-    form.querySelector<HTMLElement>('[data-picked]')!.hidden = true;
-    ta.focus();
+  function updatePicked(form: HTMLFormElement) {
+    const n = ticked.get(form)?.size ?? 0;
+    const el = form.querySelector('[data-picked-count]');
+    if (el) el.textContent = n ? `${n} picked` : '';
   }
 
   function wire(form: HTMLFormElement, ctx: FormContext) {
@@ -316,10 +305,21 @@ export function setupForms(
         const ta = t.closest('[data-rem]')?.querySelector('textarea');
         if (ta) ta.placeholder = SAMPLE.remediation[t.value as Lens];
       }
-      if (t.name === 'root_cause') suggest(form, ctx);
+      if (t.matches('[data-rc-search]')) renderOptions(form, ctx);
+      if (t.type === 'checkbox' && t.closest('[data-rc-options]')) {
+        const set = ticked.get(form)!;
+        if (t.checked) set.add(t.value);
+        else set.delete(t.value);
+        updatePicked(form);
+      }
       showError(form, '');
     });
     form.querySelectorAll<HTMLInputElement>('[data-max]').forEach(updateCounter);
+    renderOptions(form, ctx);
+    // Enter in the search box shouldn't submit the form.
+    form.querySelector('[data-rc-search]')?.addEventListener('keydown', (e) => {
+      if ((e as KeyboardEvent).key === 'Enter') e.preventDefault();
+    });
 
     form.addEventListener('click', (e) => {
       const t = (e.target as HTMLElement).closest('button');
@@ -335,8 +335,6 @@ export function setupForms(
         renumber();
         (form.querySelector('[data-add-rem]') as HTMLElement).focus();
       }
-      if (t.dataset.pick) pick(form, t.dataset.pick);
-      if (t.hasAttribute('data-unpick')) unpick(form);
     });
 
     form.addEventListener('submit', async (e) => {
@@ -384,11 +382,9 @@ function collect(form: HTMLFormElement, ctx: FormContext): Submission {
     text: (row.querySelector('textarea') as HTMLTextAreaElement).value,
   }));
   if (ctx.kind === 'remediation') return { type: 'remediation', root_cause_id: ctx.rootCauseId, remediations };
+  const root_cause_ids = [...form.querySelectorAll<HTMLInputElement>('[data-rc-options] input:checked')].map((i) => i.value);
   if (ctx.kind === 'cause') {
-    const picked = form.dataset.rcId;
-    return picked
-      ? { type: 'cause', metric_id: ctx.metricId, root_cause_id: picked, remediations }
-      : { type: 'cause', metric_id: ctx.metricId, root_cause: val('root_cause'), remediations };
+    return { type: 'cause', metric_id: ctx.metricId, root_cause_ids, root_cause: val('root_cause'), remediations };
   }
   return {
     type: 'metric',
@@ -396,6 +392,7 @@ function collect(form: HTMLFormElement, ctx: FormContext): Submission {
     arrow: ((form.querySelector('input[name=arrow]:checked') as HTMLInputElement | null)?.value ?? '') as Arrow,
     name: val('name'),
     looks_like: val('looks_like'),
+    root_cause_ids,
     root_cause: val('root_cause'),
     remediations,
   };
