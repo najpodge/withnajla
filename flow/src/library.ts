@@ -45,24 +45,27 @@ function flash(store: Store, id: string): string {
   return ` is-new" style="animation-delay:-${elapsed}ms`;
 }
 
-export function badge(row: { source: string; created_at: string }): string {
-  if (row.source === 'najla') return `<span class="badge badge-najla" title="Curated by Najla">Najla</span>`;
-  return `<span class="badge badge-community">Community · <time datetime="${row.created_at}" data-ago>${ago(row.created_at)}</time></span>`;
+type Authored = { source: string; author?: string | null; created_at: string };
+
+// Curated rows carry no tag; community rows show who (a random name) and when.
+export function badge(row: Authored): string {
+  if (row.source === 'najla') return '';
+  return `<span class="badge badge-community" title="Added by the community">${esc(row.author || 'Community')} · <time datetime="${row.created_at}" data-ago>${ago(row.created_at)}</time></span>`;
 }
 
-const meta = (row: { source: string; created_at: string }) => `<p class="meta">${badge(row)}</p>`;
+const meta = (row: Authored) => (row.source === 'najla' ? '' : `<p class="meta">${badge(row)}</p>`);
 
 const addBtn = (action: string, attrs: string, text: string, label?: string) =>
   `<button type="button" class="add" data-action="${action}" ${attrs}${label ? ` aria-label="${esc(label)}"` : ''}>${text}</button>`;
 
 function remChip(store: Store, r: Remediation, q: string) {
-  return `<li class="rem rem-${r.lens}${flash(store, r.id)}" id="item-${r.id}"><span class="rem-text">${hl(r.text, q)}</span> ${badge(r)}</li>`;
+  return `<li class="rem rem-${r.lens}${flash(store, r.id)}" id="item-${r.id}"><span class="rem-text">${hl(r.text, q)}</span>${r.source === 'najla' ? '' : ' ' + badge(r)}</li>`;
 }
 
 function signalsList(store: Store, sp: StuckPoint, added: Signal[], q: string) {
   if (!sp.signals.length && !added.length) return '';
   return `<ul class="signals">${sp.signals.map((s) => `<li>${hl(s, q)}</li>`).join('')}${added
-    .map((s) => `<li class="${flash(store, s.id)}" id="item-${s.id}">${hl(s.text, q)} ${badge(s)}</li>`)
+    .map((s) => `<li class="${flash(store, s.id)}" id="item-${s.id}">${hl(s.text, q)}${s.source === 'najla' ? '' : ' ' + badge(s)}</li>`)
     .join('')}</ul>`;
 }
 

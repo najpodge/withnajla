@@ -14,6 +14,7 @@ interface Row {
   id: string;
   created_at: string;
   source: Source;
+  author?: string | null;
   hidden?: boolean;
 }
 

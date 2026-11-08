@@ -149,6 +149,34 @@ textarea {
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
+.hero-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+}
+.social {
+  display: flex;
+  gap: var(--sp-1);
+  margin-right: -10px;
+}
+.social a {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  color: var(--ink);
+}
+.social a:hover {
+  color: var(--accent-ink);
+  background: rgb(255 255 255 / 0.5);
+}
+.social svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
 .eyebrow {
   font-size: var(--fs-sm);
   font-weight: 500;
@@ -748,11 +776,6 @@ mark {
   border-radius: 999px;
   vertical-align: 1px;
   white-space: nowrap;
-}
-.badge-najla {
-  color: var(--accent-ink);
-  border: 1px solid #e3a9b6;
-  background: #fff;
 }
 .badge-community {
   color: #2f5f7a;

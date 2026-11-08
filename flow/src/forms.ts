@@ -4,6 +4,7 @@ import type { Store } from './store';
 import type { Lens, RemediationInput, SectionId, Submission, SubmitResult } from './types';
 import { esc } from './util';
 import { normalize, validateSubmission } from './validate';
+import { myAuthorName } from './authors';
 
 export type FormContext =
   | { kind: 'signal'; stuckPointId: string }
@@ -206,7 +207,7 @@ export function setupForms(
           ${fields}
           ${withRems ? `<div data-rems>${remRow(1, ctx.kind === 'remediation' ? ctx.lens : undefined)}</div>
           <button type="button" class="link" data-add-rem>+ Add another remediation</button>` : ''}
-          <p class="notice">${NOTICE}</p>
+          <p class="notice">You'll appear as <strong>${esc(myAuthorName())}</strong>. ${NOTICE}</p>
           <div class="turnstile" data-turnstile></div>
           <p class="form-error" role="alert" data-error></p>
         </div>

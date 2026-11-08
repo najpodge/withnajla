@@ -11,6 +11,7 @@ import type {
   SubmitResult,
   TableName,
 } from './types';
+import { authorIndexes, myAuthorName } from './authors';
 import { validateSubmission } from './validate';
 
 export interface Backend {
@@ -112,7 +113,7 @@ async function liveBackend(url: string, key: string): Promise<Backend> {
       const res = await fetch(`${url}/functions/v1/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', apikey: key },
-        body: JSON.stringify({ ...sub, turnstileToken }),
+        body: JSON.stringify({ ...sub, author: authorIndexes(), turnstileToken }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Something went wrong. Please try again.');
@@ -209,7 +210,7 @@ function demoBackend(): Backend {
         for (const text of sub.signals) {
           const known = [...sp.signals, ...snap.signals.filter((s) => s.stuck_point_id === sp.id).map((s) => s.text)];
           if (known.some((k) => k.toLowerCase() === text.toLowerCase())) throw new Error('That signal is already listed');
-          out.signals.push({ id: id(), created_at: now(), source: 'community', stuck_point_id: sp.id, text });
+          out.signals.push({ id: id(), created_at: now(), source: 'community', author: myAuthorName(), stuck_point_id: sp.id, text });
         }
         const batch: Stored[] = out.signals.map((row) => ({ table: 'signals' as const, row }));
         batch.forEach(apply);
@@ -224,7 +225,7 @@ function demoBackend(): Backend {
         const n = Math.max(0, ...snap.stuck_points.filter((s) => s.section === sub.section).map((s) => +s.code.slice(1))) + 1;
         spId = id();
         out.stuck_point = {
-          id: spId, created_at: now(), source: 'community', section: sub.section, code: sub.section + n,
+          id: spId, created_at: now(), source: 'community', author: myAuthorName(), section: sub.section, code: sub.section + n,
           name: sub.name, symptom: sub.symptom, signals: sub.signals,
         };
       }
@@ -233,13 +234,13 @@ function demoBackend(): Backend {
           throw new Error('That idea is already in the library.');
         }
         rcId = id();
-        out.root_cause = { id: rcId, created_at: now(), source: 'community', stuck_point_id: spId, text: sub.root_cause };
+        out.root_cause = { id: rcId, created_at: now(), source: 'community', author: myAuthorName(), stuck_point_id: spId, text: sub.root_cause };
       }
       for (const r of sub.remediations) {
         if (snap.remediations.some((x) => x.root_cause_id === rcId && x.lens === r.lens && x.text === r.text)) {
           throw new Error('That idea is already in the library.');
         }
-        out.remediations.push({ id: id(), created_at: now(), source: 'community', root_cause_id: rcId, lens: r.lens, text: r.text });
+        out.remediations.push({ id: id(), created_at: now(), source: 'community', author: myAuthorName(), root_cause_id: rcId, lens: r.lens, text: r.text });
       }
 
       const batch: Stored[] = [
