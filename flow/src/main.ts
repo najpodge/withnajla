@@ -56,31 +56,35 @@ function renderStatic() {
   const primer = $<HTMLDetailsElement>('[data-primer]');
   primer.open = desktop.matches;
 
+  $('[data-library-note]').textContent = content.library_note;
+
   const ex = content.worked_example;
+  const sec = (id: string) =>
+    `<span class="letter" aria-hidden="true">${id}</span><span class="sr-only">Section ${id}, ${esc(SHORT_NAME[id] ?? '')}: </span>`;
   $('[data-example]').innerHTML = `
     <article class="example">
       <p class="k">Worked example</p>
       <h2>${esc(ex.title.replace(/^Example:\s*/, '').replace(/^./, (c) => c.toUpperCase()))}</h2>
       <p class="example-setup">${esc(ex.setup)}</p>
       <dl class="example-grid">
-        <div><dt>Shows up</dt><dd>${esc(ex.shows_up)}</dd></div>
-        <div><dt>Root cause</dt><dd>${esc(ex.root_cause)}</dd></div>
+        <div><dt>5 whys</dt><dd><ol class="whys">${ex.five_whys
+          .map(([q, a]) => `<li><strong>${esc(q)}</strong> ${esc(a)}</li>`)
+          .join('')}</ol></dd></div>
+        <div><dt>Where it shows up</dt><dd class="with-letter">${sec(ex.shows_up_section)}<span>${esc(ex.shows_up)}</span></dd></div>
+        <div><dt>Root cause</dt><dd class="with-letter">${sec(ex.root_cause_section)}<span>${esc(ex.root_cause)}</span></dd></div>
         <div><dt>Remediation</dt><dd><div class="fixes">${LENSES.map(
           (l) => `<div><span class="tag tag-${l}">${LENS_LABEL[l]}</span><span>${esc(ex.fixes[l])}</span></div>`,
         ).join('')}</div></dd></div>
-        <div class="watch"><dt>Watch</dt><dd>${esc(ex.watch)}</dd></div>
+        <div class="ex-signals"><dt>Signals</dt><dd>${esc(ex.signals)}</dd></div>
       </dl>
     </article>`;
 
   const c = content.contact;
   $('[data-footer]').innerHTML = `
     <div>
-      <p class="foot-title">Stay in touch</p>
-      <ul class="foot-links">
-        <li><a href="https://www.${c.linkedin}" rel="noopener">LinkedIn</a></li>
-        <li><a href="mailto:${c.email}">${c.email}</a></li>
-        <li><a href="${c.newsletter}" rel="noopener">Newsletter: withnajla.substack.com</a></li>
-      </ul>
+      <p class="foot-title">${esc(c.heading)}</p>
+      <p class="foot-line">${esc(c.line)}</p>
+      <ul class="foot-links">${c.links.map((l) => `<li><a href="${l.url}" rel="noopener">${esc(l.label)}</a></li>`).join('')}</ul>
     </div>
     <div>
       <p class="small">Contributions are anonymous and public as soon as they're submitted, and may be shown, edited or reused by Najla Elmachtoub.</p>

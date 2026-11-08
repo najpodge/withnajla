@@ -191,7 +191,7 @@ export function countLabel(rows: VisibleRow[]): string {
 export function emptyState(f: Filter): string {
   return `<div class="empty">
     <p class="empty-title">Nothing matches${f.q ? ` “${esc(f.q)}”` : ''}${f.section ? ` in section ${f.section}` : ''}.</p>
-    <p>Seen it on your team? Add it to the library.</p>
+    <p>That might be one nobody has named yet. If you've seen it on your team, add it. It shows up for everyone right away.</p>
     <button type="button" class="btn" data-action="add-sp" data-prefill="query">+ Add a new stuck point</button>
   </div>`;
 }

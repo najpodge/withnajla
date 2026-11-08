@@ -10,6 +10,7 @@
       "output": "The work moving along the edges.",
       "flow": "What reaches the sink."
     },
+    "library_note": "These are my best guesses, not a complete list. Add a stuck point, a root cause or a fix. It shows up for everyone right away. Let's see what we can uncover as a collective.",
     "key_line": "Output is the work moving along the edges. Flow is what reaches the sink.",
     "lenses": {
       "people": "Skills, roles, capacity, relationships",
@@ -17,16 +18,40 @@
       "tech": "Tools, automation, checks, guardrails"
     },
     "worked_example": {
-      "title": "Example: review backs up at Ana and Ben (A1)",
+      "title": "Example: review backs up at Ana and Ben",
       "setup": "A PM sends PRDs to two engineers, Ana and Ben. Each directs three agents. The agents open about 30 PRs a week, and Ana and Ben review all of them. Output is up; customers get about as many working features as before.",
-      "shows_up": "At Ana and Ben (a node).",
+      "shows_up": "At Ana and Ben, a node.",
+      "shows_up_section": "A",
       "root_cause": "The human ↔ agent edge sends more PRs than two people can review.",
+      "root_cause_section": "D",
+      "five_whys": [
+        [
+          "Why are escaped defects up?",
+          "Reviews are rushed."
+        ],
+        [
+          "Why are reviews rushed?",
+          "Ana and Ben have more PRs than they can review."
+        ],
+        [
+          "Why so many PRs?",
+          "Agents open about 3× more than before."
+        ],
+        [
+          "Why does every PR go to Ana and Ben?",
+          "Every PR still needs a human review."
+        ],
+        [
+          "Why?",
+          "We added agents but kept the same review process."
+        ]
+      ],
       "fixes": {
         "people": "Add reviewers (rarely realistic now)",
         "process": "Agents review agent PRs; humans review only what gets escalated",
         "tech": "An automated check that escalates risky PRs to a human"
       },
-      "watch": "Escaped defects, not PRs reviewed."
+      "signals": "Escaped defects, not PRs reviewed."
     },
     "practices": [
       {
@@ -51,9 +76,18 @@
       }
     ],
     "contact": {
-      "linkedin": "linkedin.com/in/najlaelmachtoub",
-      "email": "nelmachtoub@gmail.com",
-      "newsletter": "https://withnajla.substack.com/"
+      "heading": "Stay in touch",
+      "line": "I'm writing about engineering leadership, process and AI. Follow along:",
+      "links": [
+        {
+          "label": "withnajla.substack.com",
+          "url": "https://withnajla.substack.com/"
+        },
+        {
+          "label": "linkedin.com/in/najlaelmachtoub",
+          "url": "https://www.linkedin.com/in/najlaelmachtoub"
+        }
+      ]
     }
   },
   "sections": [
@@ -62,11 +96,9 @@
       "name": "Human nodes",
       "description": "People on the team: their capacity, context and judgment.",
       "signals": [
-        "↓ Review load per person",
-        "↓ After-hours work",
-        "↑ Pulse survey scores",
-        "↑ Quality of life",
-        "↑ Performance"
+        "↑ Employee survey scores",
+        "↓ Work in progress per person",
+        "↓ After-hours work"
       ]
     },
     {
@@ -75,8 +107,8 @@
       "description": "The agents doing work: what they produce and what it costs.",
       "signals": [
         "↓ Cost per merged change",
-        "↓ Rework on agent output",
-        "↓ Churn in agent-written code"
+        "↓ Churn in agent-written code",
+        "↓ Rework on agent output"
       ]
     },
     {
@@ -85,8 +117,8 @@
       "description": "Relationships between people: trust, shared context, feedback.",
       "signals": [
         "↓ Cross-team rework",
-        "↓ Waiting on answers from other people or teams",
-        "↑ 1:1s and feedback that actually happen"
+        "↓ Waiting on other people or teams",
+        "↑ 1:1s and feedback that happen"
       ]
     },
     {
@@ -94,8 +126,8 @@
       "name": "Human ↔ agent edges",
       "description": "Where people direct agents and review what comes back.",
       "signals": [
-        "↓ First-pass rejection of agent work",
-        "↓ Reverts of agent changes"
+        "↓ Agent work sent back",
+        "↓ Agent changes reverted"
       ]
     },
     {
@@ -103,9 +135,8 @@
       "name": "Agent ↔ agent edges",
       "description": "Agents handing work to other agents, mostly out of sight.",
       "signals": [
-        "↑ Agent workflows with a named human owner",
-        "↑ Agent workflows with an escalation path",
-        "↓ Escaped defects from agent-only paths"
+        "↓ Agent runs that fail or stall",
+        "↓ Defects from agent-only paths"
       ]
     },
     {
@@ -113,12 +144,12 @@
       "name": "System circulation",
       "description": "The processes, norms and pipelines that carry work through the team.",
       "signals": [
-        "↓ Incidents (by severity)",
-        "↓ Escaped defects",
-        "↓ Change fail rate",
-        "↓ Rework rate",
-        "↓ Security vulnerabilities",
         "↓ Review wait time",
+        "↓ Rework rate",
+        "↓ Escaped defects",
+        "↓ Incidents (by severity)",
+        "↓ Security vulnerabilities",
+        "↓ Change fail rate",
         "↓ Code churn and duplication",
         "↓ Time to make a standard change"
       ]
@@ -342,7 +373,7 @@
       "signals": [
         "After-hours work",
         "On-call load",
-        "Pulse survey scores"
+        "Employee survey scores"
       ],
       "root_causes": [
         {
@@ -466,8 +497,8 @@
       "name": "Output is plausible but wrong",
       "symptom": "Agent work looks right but isn't",
       "signals": [
-        "First-pass rejection",
-        "Reverts",
+        "Agent work sent back",
+        "Agent changes reverted",
         "Code churn",
         "Escaped defects"
       ],
@@ -570,7 +601,7 @@
           "remediations": [
             {
               "lens": "people",
-              "text": "A named owner for each agent's performance"
+              "text": "An owner for each agent's performance"
             },
             {
               "lens": "process",
@@ -727,7 +758,7 @@
             },
             {
               "lens": "tech",
-              "text": "Lightweight pulse survey"
+              "text": "Lightweight employee survey"
             }
           ]
         }
@@ -766,7 +797,7 @@
           "remediations": [
             {
               "lens": "people",
-              "text": "Named owners for critical interfaces"
+              "text": "An owner for each critical interface"
             },
             {
               "lens": "process",
@@ -786,7 +817,7 @@
       "name": "Delegation fails",
       "symptom": "Agent work rejected on the first pass",
       "signals": [
-        "First-pass rejection rate"
+        "Agent work sent back"
       ],
       "root_causes": [
         {
@@ -938,9 +969,8 @@
       "name": "Failures go unnoticed",
       "symptom": "Agent chains ship with nobody watching",
       "signals": [
-        "Agent workflows with a named owner",
-        "Agent workflows with an escalation path",
-        "Escaped defects from agent-only paths"
+        "Agent runs that fail or stall",
+        "Defects from agent-only paths"
       ],
       "root_causes": [
         {

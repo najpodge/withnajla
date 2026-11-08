@@ -1,7 +1,10 @@
 // Loads src/data/seed.json into Supabase with the service role key.
-// Idempotent: upserts sections on id, stuck points on code, root causes on
-// (stuck_point_id, text) and remediations on (root_cause_id, lens, text).
-// It never touches `hidden`, so moderation survives a re-seed.
+// Idempotent: sections upsert on id and stuck points on code. Curated root
+// causes and remediations (source = 'najla') are matched to existing rows by
+// their order under each stuck point / root cause and updated in place, so
+// changed wording never creates a duplicate. Seed items beyond the existing
+// rows are inserted. It never deletes a row, never touches community rows and
+// never touches `hidden`, so moderation survives a re-seed.
 //
 //   npm run seed        (reads SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY from .env)
 
@@ -30,6 +33,22 @@ function check<T>(label: string, res: { data: T | null; error: { message: string
   return res.data as T;
 }
 
+// Existing curated children of a parent, in curated order.
+async function curated(table: 'root_causes' | 'remediations', parentCol: string, parentId: string) {
+  return check(
+    `${table} for ${parentId}`,
+    await db.from(table).select('id').eq(parentCol, parentId).eq('source', 'najla').order('created_at').order('id'),
+  ) as { id: string }[];
+}
+
+// Update the i-th existing curated row, or insert a new one; returns its id.
+async function put(table: 'root_causes' | 'remediations', existing: { id: string }[], i: number, row: Record<string, unknown>, label: string) {
+  const res = existing[i]
+    ? await db.from(table).update(row).eq('id', existing[i].id).select('id')
+    : await db.from(table).insert({ ...row, source: 'najla' }).select('id');
+  return (check(label, res) as { id: string }[])[0].id;
+}
+
 async function main() {
   check(
     'sections',
@@ -47,6 +66,7 @@ async function main() {
 
   let rcCount = 0;
   let remCount = 0;
+  let leftover = 0;
 
   for (const sp of seed.stuck_points) {
     const [spRow] = check(
@@ -68,39 +88,38 @@ async function main() {
         .select('id'),
     ) as { id: string }[];
 
-    for (const rc of sp.root_causes) {
-      const [rcRow] = check(
-        `root cause "${rc.text}"`,
-        await db
-          .from('root_causes')
-          .upsert(
-            { stuck_point_id: spRow.id, text: rc.text, source: 'najla', created_at: stamp() },
-            { onConflict: 'stuck_point_id,text' },
-          )
-          .select('id'),
-      ) as { id: string }[];
+    const rcs = await curated('root_causes', 'stuck_point_id', spRow.id);
+    leftover += Math.max(0, rcs.length - sp.root_causes.length);
+
+    for (const [i, rc] of sp.root_causes.entries()) {
+      const rcId = await put(
+        'root_causes',
+        rcs,
+        i,
+        { stuck_point_id: spRow.id, text: rc.text, created_at: stamp() },
+        `${sp.code} root cause "${rc.text}"`,
+      );
       rcCount++;
 
-      check(
-        `remediations for "${rc.text}"`,
-        await db.from('remediations').upsert(
-          rc.remediations.map((r) => ({
-            root_cause_id: rcRow.id,
-            lens: r.lens,
-            text: r.text,
-            source: 'najla',
-            created_at: stamp(),
-          })),
-          { onConflict: 'root_cause_id,lens,text' },
-        ),
-      );
-      remCount += rc.remediations.length;
+      const rems = await curated('remediations', 'root_cause_id', rcId);
+      leftover += Math.max(0, rems.length - rc.remediations.length);
+      for (const [j, r] of rc.remediations.entries()) {
+        await put(
+          'remediations',
+          rems,
+          j,
+          { root_cause_id: rcId, lens: r.lens, text: r.text, created_at: stamp() },
+          `${sp.code} remediation "${r.text}"`,
+        );
+        remCount++;
+      }
     }
   }
 
   console.log(
     `Seeded ${seed.sections.length} sections, ${seed.stuck_points.length} stuck points, ${rcCount} root causes, ${remCount} remediations.`,
   );
+  if (leftover) console.log(`${leftover} curated rows have no match in seed.json and were left as they are.`);
 }
 
 main();

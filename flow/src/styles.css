@@ -717,6 +717,19 @@ mark {
 .library-head .add-sp {
   display: none;
 }
+.note-wrap {
+  margin-top: var(--sp-6);
+}
+.library-note {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: var(--sp-3) var(--sp-4);
+  font-size: var(--fs-sm);
+  color: var(--ink-2);
+  max-width: 72ch;
+}
 .demo-note {
   background: var(--process-soft);
   border: 1px solid #ecd9a0;
@@ -1086,9 +1099,30 @@ mark {
 .example-grid dd {
   margin: 0;
 }
-.example-grid .watch dd {
+.example-grid .ex-signals dd {
   font-weight: 600;
   color: var(--accent-ink);
+}
+.example-grid .with-letter {
+  display: flex;
+  gap: var(--sp-3);
+  align-items: flex-start;
+}
+.example-grid .with-letter .letter {
+  margin-top: -2px;
+}
+.whys {
+  margin: 0;
+  padding-left: 1.5em;
+  display: grid;
+  gap: var(--sp-2);
+}
+.whys li::marker {
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.whys strong {
+  font-weight: 600;
 }
 
 
@@ -1106,6 +1140,11 @@ mark {
 .foot-title {
   font-weight: 600;
   font-size: var(--fs-sm);
+  margin-bottom: var(--sp-2);
+}
+.foot-line {
+  font-size: var(--fs-sm);
+  color: var(--ink-2);
   margin-bottom: var(--sp-2);
 }
 .foot-links {
@@ -1381,7 +1420,7 @@ mark {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .example-grid > div {
-    grid-template-columns: 96px 1fr;
+    grid-template-columns: 136px 1fr;
     gap: var(--sp-3);
   }
   .foot-inner {
