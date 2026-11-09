@@ -167,7 +167,7 @@ export function renderTable(store: Store, rows: VisibleRow[], q: string): string
       </tr>
       <tr>
         <th scope="col">Signal</th>
-        <th scope="col">Root cause</th>
+        <th scope="col">Root causes when this signal is off</th>
         <th scope="col" class="h-people">People</th>
         <th scope="col" class="h-process">Process</th>
         <th scope="col" class="h-tech">Tech</th>
