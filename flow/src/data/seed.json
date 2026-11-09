@@ -8,7 +8,7 @@
       "source": "Where work comes in.",
       "sink": "Where value lands: customers and the business.",
       "output": "The work moving along the edges.",
-      "flow": "What reaches the sink."
+      "flow": "The work that reaches the sink: customers and the business."
     },
     "library_note": "These are my best guesses, not a complete list. Add a signal, a root cause or a fix. It shows up for everyone right away. Let's see what we can uncover as a collective.",
     "key_line": "Output is the work moving along the edges. Flow is what reaches the sink.",
@@ -19,39 +19,38 @@
     },
     "worked_example": {
       "title": "Example: review backs up at Ana and Ben",
-      "setup": "A PM sends PRDs to two engineers, Ana and Ben. Each directs three agents. The agents open about 30 PRs a week, and Ana and Ben review all of them. Output is up; customers get about as many working features as before.",
-      "shows_up": "At Ana and Ben, a node.",
+      "setup": "A PM sends PRDs to two engineers, Ana and Ben. Each now directs three agents. PRs go from about 10 a week to about 30 (3×), and Ana and Ben still review all of them. Output is up; feature adoption stays flat.",
+      "signal": "Work in progress ↑, after-hours work ↑",
+      "shows_up": "Human nodes, at Ana and Ben.",
       "shows_up_section": "A",
-      "root_cause": "The human ↔ agent edge sends more PRs than two people can review.",
-      "root_cause_section": "D",
       "five_whys": [
         [
-          "Why are escaped defects up?",
-          "Reviews are rushed."
+          "Why is Ana and Ben's work in progress up?",
+          "They're reviewing far more PRs."
         ],
         [
-          "Why are reviews rushed?",
-          "Ana and Ben have more PRs than they can review."
+          "Why so many more PRs?",
+          "Their review queue tripled, from about 10 a week to 30."
         ],
         [
-          "Why so many PRs?",
-          "Agents open about 3× more than before."
+          "Why did it triple?",
+          "Each of them now directs three agents."
         ],
         [
-          "Why does every PR go to Ana and Ben?",
-          "Every PR still needs a human review."
+          "Why does every agent PR go to Ana or Ben?",
+          "Every PR still goes to a human for review."
         ],
         [
           "Why?",
-          "We added agents but kept the same review process."
+          "When agents arrived, nobody changed that handoff."
         ]
       ],
+      "root_cause": "The human ↔ agent handoff never changed: every agent PR still goes to a human.",
       "fixes": {
         "people": "Add reviewers (rarely realistic now)",
-        "process": "Agents review agent PRs; humans review only what gets escalated",
-        "tech": "An automated check that escalates risky PRs to a human"
-      },
-      "signals": "Escaped defects, not PRs reviewed."
+        "process": "Review by risk: humans fully review high-risk agent PRs and spot-check the rest",
+        "tech": "An automated check that flags high-risk PRs for a human"
+      }
     },
     "practices": [
       {
