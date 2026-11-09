@@ -807,7 +807,8 @@
           "lens": "tech",
           "text": "Automated check that escalates risky PRs to a human"
         }
-      ]
+      ],
+      "theme": "Review and quality"
     },
     {
       "text": "Too few people trusted to review",
@@ -828,7 +829,8 @@
           "lens": "tech",
           "text": "Code owners that spread review across more people"
         }
-      ]
+      ],
+      "theme": "Review and quality"
     },
     {
       "text": "Reviewers spend time on mechanical issues",
@@ -849,7 +851,8 @@
           "lens": "tech",
           "text": "Linters and formatters in CI"
         }
-      ]
+      ],
+      "theme": "Review and quality"
     },
     {
       "text": "Knowledge was never written down",
@@ -870,7 +873,8 @@
           "lens": "tech",
           "text": "Searchable docs kept next to the code"
         }
-      ]
+      ],
+      "theme": "Context and knowledge"
     },
     {
       "text": "Ownership concentrated in one person",
@@ -891,7 +895,8 @@
           "lens": "tech",
           "text": "Code owners list at least two people"
         }
-      ]
+      ],
+      "theme": "Context and knowledge"
     },
     {
       "text": "Agents can't reach the context",
@@ -908,7 +913,8 @@
           "lens": "tech",
           "text": "Repo-level context and rule files"
         }
-      ]
+      ],
+      "theme": "Context and knowledge"
     },
     {
       "text": "Decision rights unclear or centralized",
@@ -929,7 +935,8 @@
           "lens": "tech",
           "text": "Decision log"
         }
-      ]
+      ],
+      "theme": "Decisions and priorities"
     },
     {
       "text": "Judgment not grown below the leader",
@@ -946,7 +953,8 @@
           "lens": "tech",
           "text": "Decision log that records the reasoning, so others can learn it"
         }
-      ]
+      ],
+      "theme": "Decisions and priorities"
     },
     {
       "text": "AI raised the pace bar with no recovery cycle",
@@ -967,7 +975,8 @@
           "lens": "tech",
           "text": "Quiet hours for notifications and agent pings"
         }
-      ]
+      ],
+      "theme": "Pace and capacity"
     },
     {
       "text": "On-call and alert load are rising",
@@ -984,7 +993,8 @@
           "lens": "tech",
           "text": "Cut alert noise"
         }
-      ]
+      ],
+      "theme": "Pace and capacity"
     },
     {
       "text": "Delegation without comprehension",
@@ -1001,7 +1011,8 @@
           "lens": "tech",
           "text": "Link each PR to the spec or agent session it came from"
         }
-      ]
+      ],
+      "theme": "Ownership and accountability"
     },
     {
       "text": "No ownership defined for AI-produced work",
@@ -1018,7 +1029,8 @@
           "lens": "tech",
           "text": "Required human-owner field on agent PRs"
         }
-      ]
+      ],
+      "theme": "Ownership and accountability"
     },
     {
       "text": "People defer to agent recommendations",
@@ -1035,7 +1047,8 @@
           "lens": "tech",
           "text": "Agents show alternatives, not a single answer"
         }
-      ]
+      ],
+      "theme": "Review and quality"
     },
     {
       "text": "Thin context",
@@ -1052,7 +1065,8 @@
           "lens": "tech",
           "text": "Project context agents can read"
         }
-      ]
+      ],
+      "theme": "Context and knowledge"
     },
     {
       "text": "Incoherent codebase",
@@ -1069,7 +1083,8 @@
           "lens": "tech",
           "text": "Architecture checks agents must pass"
         }
-      ]
+      ],
+      "theme": "Pace and capacity"
     },
     {
       "text": "Agents given open-ended goals",
@@ -1086,7 +1101,8 @@
           "lens": "tech",
           "text": "Scope agents to backlog items"
         }
-      ]
+      ],
+      "theme": "Delegating to agents"
     },
     {
       "text": "Priorities are unclear",
@@ -1103,7 +1119,8 @@
           "lens": "tech",
           "text": "One board that shows agent and human work together"
         }
-      ]
+      ],
+      "theme": "Decisions and priorities"
     },
     {
       "text": "Agent setup changes without regression testing",
@@ -1120,7 +1137,8 @@
           "lens": "tech",
           "text": "Automated regression evals and version tracking"
         }
-      ]
+      ],
+      "theme": "Delegating to agents"
     },
     {
       "text": "Agent context goes stale",
@@ -1137,7 +1155,8 @@
           "lens": "tech",
           "text": "Freshness checks on agent context"
         }
-      ]
+      ],
+      "theme": "Context and knowledge"
     },
     {
       "text": "Teams count output, not the full cost of producing it",
@@ -1154,7 +1173,8 @@
           "lens": "tech",
           "text": "Track agent spend alongside the human effort it creates"
         }
-      ]
+      ],
+      "theme": "Decisions and priorities"
     },
     {
       "text": "People working solo with agents",
@@ -1175,7 +1195,8 @@
           "lens": "tech",
           "text": "Shared notes on tickets and PRs that humans and agents both update"
         }
-      ]
+      ],
+      "theme": "Collaboration and feedback"
     },
     {
       "text": "No visibility into each other's work",
@@ -1192,7 +1213,8 @@
           "lens": "tech",
           "text": "Shared view of in-flight work"
         }
-      ]
+      ],
+      "theme": "Collaboration and feedback"
     },
     {
       "text": "Low trust: hard to admit “I don't understand this”",
@@ -1213,7 +1235,8 @@
           "lens": "tech",
           "text": "Anonymous question channel"
         }
-      ]
+      ],
+      "theme": "Collaboration and feedback"
     },
     {
       "text": "Feedback rituals were cut",
@@ -1230,7 +1253,8 @@
           "lens": "tech",
           "text": "Lightweight employee survey"
         }
-      ]
+      ],
+      "theme": "Collaboration and feedback"
     },
     {
       "text": "Dependencies discovered too late",
@@ -1247,7 +1271,8 @@
           "lens": "tech",
           "text": "Track dependencies across teams and agent workflows"
         }
-      ]
+      ],
+      "theme": "Collaboration and feedback"
     },
     {
       "text": "No one owns the interface between teams",
@@ -1264,7 +1289,8 @@
           "lens": "tech",
           "text": "Alerts when work waits longer than agreed"
         }
-      ]
+      ],
+      "theme": "Ownership and accountability"
     },
     {
       "text": "Vague intent or specs",
@@ -1281,7 +1307,8 @@
           "lens": "tech",
           "text": "Reusable task templates"
         }
-      ]
+      ],
+      "theme": "Delegating to agents"
     },
     {
       "text": "Wrong task for an agent",
@@ -1298,7 +1325,8 @@
           "lens": "tech",
           "text": "Track which task types agents succeed at"
         }
-      ]
+      ],
+      "theme": "Delegating to agents"
     },
     {
       "text": "Weak feedback to the agent",
@@ -1315,7 +1343,8 @@
           "lens": "tech",
           "text": "Tests and examples instead of more prompting"
         }
-      ]
+      ],
+      "theme": "Delegating to agents"
     },
     {
       "text": "What agents may do on their own was never defined",
@@ -1332,7 +1361,8 @@
           "lens": "tech",
           "text": "Permission scopes, approval gates and action limits"
         }
-      ]
+      ],
+      "theme": "Ownership and accountability"
     },
     {
       "text": "The accountable human can't intervene",
@@ -1349,7 +1379,8 @@
           "lens": "tech",
           "text": "Pause, cancel and roll back agent workflows"
         }
-      ]
+      ],
+      "theme": "Ownership and accountability"
     },
     {
       "text": "People can't see where agents are reliable",
@@ -1366,7 +1397,8 @@
           "lens": "tech",
           "text": "Show provenance and track record next to agent output"
         }
-      ]
+      ],
+      "theme": "Review and quality"
     },
     {
       "text": "No owner",
@@ -1383,7 +1415,8 @@
           "lens": "tech",
           "text": "Ownership metadata on every agent workflow"
         }
-      ]
+      ],
+      "theme": "Ownership and accountability"
     },
     {
       "text": "Agents verifying agents",
@@ -1404,7 +1437,8 @@
           "lens": "tech",
           "text": "Run logs someone reads"
         }
-      ]
+      ],
+      "theme": "Review and quality"
     },
     {
       "text": "No exit to a human",
@@ -1421,7 +1455,8 @@
           "lens": "tech",
           "text": "Automatic escalation when checks fail or confidence is low"
         }
-      ]
+      ],
+      "theme": "Ownership and accountability"
     },
     {
       "text": "Agents assume different formats or inputs",
@@ -1438,7 +1473,8 @@
           "lens": "tech",
           "text": "Shared schemas, validated at each handoff"
         }
-      ]
+      ],
+      "theme": "Context and knowledge"
     },
     {
       "text": "Handoffs don't carry state",
@@ -1455,7 +1491,8 @@
           "lens": "tech",
           "text": "Shared workflow state agents can read"
         }
-      ]
+      ],
+      "theme": "Context and knowledge"
     },
     {
       "text": "No stopping rules",
@@ -1472,7 +1509,8 @@
           "lens": "tech",
           "text": "Loop detection, budgets and timeouts"
         }
-      ]
+      ],
+      "theme": "Delegating to agents"
     },
     {
       "text": "Agents have conflicting goals or instructions",
@@ -1489,7 +1527,8 @@
           "lens": "tech",
           "text": "Instructions managed in one place"
         }
-      ]
+      ],
+      "theme": "Delegating to agents"
     },
     {
       "text": "Upstream sped up, downstream didn't",
@@ -1510,7 +1549,8 @@
           "lens": "tech",
           "text": "Automate the constrained stage"
         }
-      ]
+      ],
+      "theme": "Pace and capacity"
     },
     {
       "text": "Rituals cut “because AI”",
@@ -1531,7 +1571,8 @@
           "lens": "tech",
           "text": "Incident tracker with follow-up items"
         }
-      ]
+      ],
+      "theme": "Collaboration and feedback"
     },
     {
       "text": "Juniors supervise agents instead of learning",
@@ -1548,7 +1589,8 @@
           "lens": "tech",
           "text": "Agents set to explain their changes on learning tasks"
         }
-      ]
+      ],
+      "theme": "Context and knowledge"
     },
     {
       "text": "Incidents not linked to causes",
@@ -1565,7 +1607,8 @@
           "lens": "tech",
           "text": "Incident tracking tied to changes"
         }
-      ]
+      ],
+      "theme": "Collaboration and feedback"
     },
     {
       "text": "Activity rewarded over outcomes",
@@ -1582,7 +1625,8 @@
           "lens": "tech",
           "text": "Dashboards that lead with outcomes"
         }
-      ]
+      ],
+      "theme": "Decisions and priorities"
     },
     {
       "text": "Fixes optimize one stage, not end-to-end flow",
@@ -1599,7 +1643,8 @@
           "lens": "tech",
           "text": "End-to-end flow view that shows queues"
         }
-      ]
+      ],
+      "theme": "Pace and capacity"
     },
     {
       "text": "Changes have side effects elsewhere",
@@ -1616,7 +1661,8 @@
           "lens": "tech",
           "text": "Watch downstream queues and rework after rollout"
         }
-      ]
+      ],
+      "theme": "Pace and capacity"
     },
     {
       "text": "No success metric defined before building",
@@ -1637,7 +1683,8 @@
           "lens": "tech",
           "text": "Dashboard per initiative"
         }
-      ]
+      ],
+      "theme": "Customers and outcomes"
     },
     {
       "text": "Engineers far from customers",
@@ -1654,7 +1701,8 @@
           "lens": "tech",
           "text": "Share product analytics with engineers"
         }
-      ]
+      ],
+      "theme": "Customers and outcomes"
     },
     {
       "text": "Features not instrumented",
@@ -1671,7 +1719,8 @@
           "lens": "tech",
           "text": "Instrument before launch"
         }
-      ]
+      ],
+      "theme": "Customers and outcomes"
     },
     {
       "text": "Speed traded for usability and reliability",
@@ -1688,7 +1737,8 @@
           "lens": "tech",
           "text": "Monitor customer-facing errors and task success"
         }
-      ]
+      ],
+      "theme": "Review and quality"
     },
     {
       "text": "Teams can't see how changes land with customers",
@@ -1705,7 +1755,8 @@
           "lens": "tech",
           "text": "Link support signals and analytics to shipped changes"
         }
-      ]
+      ],
+      "theme": "Customers and outcomes"
     },
     {
       "text": "Success judged only at launch",
@@ -1722,7 +1773,8 @@
           "lens": "tech",
           "text": "Track adoption and outcomes over time"
         }
-      ]
+      ],
+      "theme": "Customers and outcomes"
     },
     {
       "text": "Tech debt from building fast wears the feature down",
@@ -1739,7 +1791,18 @@
           "lens": "tech",
           "text": "Track code coherence and defects per feature over time"
         }
-      ]
+      ],
+      "theme": "Pace and capacity"
     }
+  ],
+  "themes": [
+    "Review and quality",
+    "Context and knowledge",
+    "Ownership and accountability",
+    "Delegating to agents",
+    "Decisions and priorities",
+    "Pace and capacity",
+    "Collaboration and feedback",
+    "Customers and outcomes"
   ]
 }

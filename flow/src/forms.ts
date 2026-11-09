@@ -1,7 +1,7 @@
 import type { Backend } from './backend';
-import { LENSES, LENS_LABEL, LIMITS, SHORT_NAME } from './content';
+import { LENSES, LENS_LABEL, LIMITS, SHORT_NAME, THEMES, themeOf } from './content';
 import type { Store } from './store';
-import type { Arrow, Lens, RemediationInput, SectionId, Submission, SubmitResult } from './types';
+import type { Arrow, Lens, RemediationInput, RootCause, SectionId, Submission, SubmitResult } from './types';
 import { esc } from './util';
 import { normalize, validateSubmission } from './validate';
 import { myAuthorName } from './authors';
@@ -104,7 +104,7 @@ function rootCausePicker(required: boolean, hiddenCount: number) {
   const id = nextId('rc-search');
   return `<div class="field rc-picker" data-picker>
     <p class="label">Root causes already in the library${required ? '' : ' <span class="muted">(optional)</span>'}</p>
-    <p class="hint">Tick every one that could explain this signal. Search to narrow the list.</p>
+    <p class="hint">Tick every one that could explain this signal. The ones at the top are common in this part of the network; search by any word to find others.</p>
     <label class="sr-only" for="${id}">Search root causes</label>
     <input id="${id}" type="search" data-rc-search placeholder="Search, e.g. review, context, ownership" autocomplete="off">
     <ul class="rc-options" data-rc-options aria-label="Root causes in the library"></ul>
@@ -132,6 +132,13 @@ export function setupForms(
   let token: string | null = null;
   let tsFailed = false;
   let opener: HTMLElement | null = null;
+  let current: FormContext | null = null;
+
+  // Someone else added a root cause while this form is open: show it.
+  store.onChange(() => {
+    const form = dialog.querySelector('form');
+    if (dialog.open && form && current) renderOptions(form, current);
+  });
 
   dialog.addEventListener('close', () => {
     if (widgetId && window.turnstile) window.turnstile.remove(widgetId);
@@ -165,6 +172,7 @@ export function setupForms(
   }
 
   function open(ctx: FormContext, from?: HTMLElement | null) {
+    current = ctx;
     opener = from ?? (document.activeElement as HTMLElement);
     const { title, ctx: ctxHtml } = contextHtml(ctx);
 
@@ -259,20 +267,38 @@ export function setupForms(
     if (!list) return;
     const set = ticked.get(form) ?? new Set<string>();
     ticked.set(form, set);
-    const q = form.querySelector<HTMLInputElement>('[data-rc-search]')!.value;
+    const q = form.querySelector<HTMLInputElement>('[data-rc-search]')!.value.trim();
+    const section = (ctx.kind === 'cause' ? store.metrics.get(ctx.metricId)?.section : form.querySelector<HTMLSelectElement>('[name=section]')?.value) as SectionId | undefined;
     const exclude = new Set(ctx.kind === 'cause' ? store.causesOf(ctx.metricId).map((c) => c.rc.id) : []);
-    const ranked = store.rankRootCauses(q).filter((x) => !exclude.has(x.rc.id));
-    const matched = q.trim() ? ranked.filter((x) => x.score > 0) : ranked;
-    const pinned = ranked.filter((x) => set.has(x.rc.id));
-    const rest = matched.filter((x) => !set.has(x.rc.id));
-    const opt = ({ rc }: { rc: { id: string; text: string } }) => {
-      const n = store.metricsOf(rc.id).length;
+    const usable = (rc: RootCause) => !exclude.has(rc.id);
+
+    const opt = (rc: RootCause) => {
+      const secs = store.sectionsOf(rc.id);
       return `<li><label class="rc-opt"><input type="checkbox" value="${rc.id}" ${set.has(rc.id) ? 'checked' : ''}>
-        <span class="rc-opt-text">${esc(rc.text)}</span><span class="rc-opt-n">${n} signal${n === 1 ? '' : 's'}</span></label></li>`;
+        <span class="rc-opt-text">${esc(rc.text)}</span>
+        <span class="rc-opt-secs" title="Shows up in ${secs.join(', ') || 'no sections yet'}">${secs.map((x) => `<span class="mini-letter">${x}</span>`).join('')}</span></label></li>`;
     };
-    list.innerHTML =
-      pinned.map(opt).join('') +
-      (q.trim() && !rest.length ? `<li class="rc-none">No close match. Write it as a new root cause below.</li>` : rest.map(opt).join(''));
+    const group = (title: string, rcs: RootCause[]) =>
+      rcs.length ? `<li class="rc-group" role="presentation">${esc(title)}</li>${rcs.map(opt).join('')}` : '';
+
+    const picked = [...set].map((id) => store.rootCauses.get(id)).filter((rc): rc is RootCause => !!rc);
+    let html = group('Picked', picked);
+    if (q) {
+      const matches = store.rankRootCauses(q).filter((x) => x.score > 0 && usable(x.rc) && !set.has(x.rc.id));
+      html += matches.length
+        ? group('Best matches', matches.map((x) => x.rc))
+        : `<li class="rc-none">No close match. Try another word, or write it as a new root cause below.</li>`;
+    } else {
+      const shown = new Set(picked.map((rc) => rc.id));
+      const take = (rcs: RootCause[]) => rcs.filter((rc) => usable(rc) && !shown.has(rc.id) && (shown.add(rc.id), true));
+      if (section) html += group(`Common in ${section} · ${SHORT_NAME[section] ?? ''}`, take(store.commonIn(section).slice(0, 8)));
+      const all = [...store.rootCauses.values()].sort((a, b) => a.text.localeCompare(b.text));
+      for (const theme of THEMES) html += group(theme, take(all.filter((rc) => themeOf(rc.text) === theme)));
+      html += group('Added by the community', take(all.filter((rc) => !themeOf(rc.text))));
+    }
+    const top = list.scrollTop;
+    list.innerHTML = html;
+    list.scrollTop = q ? 0 : top;
     updatePicked(form);
   }
 
@@ -305,7 +331,7 @@ export function setupForms(
         const ta = t.closest('[data-rem]')?.querySelector('textarea');
         if (ta) ta.placeholder = SAMPLE.remediation[t.value as Lens];
       }
-      if (t.matches('[data-rc-search]')) renderOptions(form, ctx);
+      if (t.matches('[data-rc-search]') || t.name === 'section') renderOptions(form, ctx);
       if (t.type === 'checkbox' && t.closest('[data-rc-options]')) {
         const set = ticked.get(form)!;
         if (t.checked) set.add(t.value);

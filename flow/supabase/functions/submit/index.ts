@@ -105,9 +105,13 @@ Deno.serve(async (req) => {
 
   const { data, error } = await db.rpc('submit_idea', { payload });
   if (error) {
-    // 22023 = our own validation messages, safe to show. 23505 = duplicate.
+    // 22023 = our own validation messages, safe to show. 23505 = duplicate:
+    // ours name what's duplicated; Postgres's own ("duplicate key …") don't.
     if (error.code === '22023') return json({ error: error.message }, 400, origin);
-    if (error.code === '23505') return json({ error: 'That idea is already in the library.' }, 409, origin);
+    if (error.code === '23505') {
+      const ours = !error.message.startsWith('duplicate key');
+      return json({ error: ours ? error.message : 'That idea is already in the library.' }, 409, origin);
+    }
     if (error.code === '54000') return json({ error: error.message }, 429, origin);
     console.error('submit_idea failed', error.code, error.message);
     return json({ error: 'Something went wrong. Please try again.' }, 500, origin);

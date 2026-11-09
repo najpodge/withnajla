@@ -87,43 +87,103 @@ export class Store {
 
   /**
    * Every root cause, ranked by how well it matches the query, word by word.
-   * Words match after trimming common endings, so "reviewers" finds "review" and "owns" finds "owner".
-   * Remediation text counts too, at half weight. No query: alphabetical.
+   * Words match after trimming common endings ("reviewers" finds "review"),
+   * a few everyday words also look for related ones ("burnout" finds pace and
+   * on-call), and remediation text counts at half weight. No query: score 0.
    */
   rankRootCauses(q: string): { rc: RootCause; score: number }[] {
     const all = [...this.rootCauses.values()];
-    const qWords = words(q);
-    if (!qWords.length) {
-      return all.map((rc) => ({ rc, score: 0 })).sort((a, b) => a.rc.text.localeCompare(b.rc.text));
-    }
+    const needle = q.trim().toLowerCase();
+    if (!needle) return all.map((rc) => ({ rc, score: 0 }));
+    const groups = tokens(q).map((w) => [
+      stem(w),
+      ...(SYNONYMS[w] ?? SYNONYMS[w.replace(/s$/, '')] ?? SYNONYMS[stem(w)] ?? []).map(stem),
+    ]);
     const hits = (text: string) => {
       const tWords = words(text);
-      return qWords.filter((w) => tWords.some((t) => t.startsWith(w) || w.startsWith(t))).length;
+      return groups.filter((g) => g.some((w) => tWords.some((t) => t.startsWith(w) || w.startsWith(t)))).length;
     };
-    const needle = q.trim().toLowerCase();
     return all
       .map((rc) => {
         const remHits = Math.max(0, ...this.remediationsOf(rc.id).map((r) => hits(r.text)));
         const score = hits(rc.text) + remHits / 2 + (rc.text.toLowerCase().includes(needle) ? 2 : 0);
         return { rc, score };
       })
-      .sort((a, b) => b.score - a.score || a.rc.text.localeCompare(b.rc.text));
+      .sort((a, b) => b.score - a.score);
+  }
+
+  /** Sections a root cause shows up in, through the signals it sits under. */
+  sectionsOf(rcId: string): SectionId[] {
+    return [...new Set(this.metricsOf(rcId).map((m) => m.section))];
+  }
+
+  /** Root causes linked to signals in a section, most-linked first. */
+  commonIn(section: SectionId): RootCause[] {
+    const n = new Map<string, number>();
+    for (const l of this.links.values()) {
+      if (this.metrics.get(l.metric_id)?.section === section) n.set(l.root_cause_id, (n.get(l.root_cause_id) ?? 0) + 1);
+    }
+    return [...n.entries()]
+      .filter(([id]) => this.rootCauses.has(id))
+      .sort((a, b) => b[1] - a[1])
+      .map(([id]) => this.rootCauses.get(id)!);
   }
 }
 
+// Short words that matter here, kept even though they're under 3 letters.
+const SHORT = new Set(['ai', 'pr', 'qa', 'ci', 'ux', 'pm', 'p0', 'p1']);
 const STOP = new Set(
   'the and for with are not but too its that this from into than they them their have has had can cant don dont doesn get got our your was were who what when how why all any out off own one more less very just'.split(' '),
 );
+// Everyday words people search with → words the library actually uses.
+const SYNONYMS: Record<string, string[]> = {
+  burnout: ['pace', 'recovery', 'call', 'alert', 'capacity'],
+  burn: ['pace', 'recovery', 'call', 'alert', 'capacity'],
+  tired: ['pace', 'recovery', 'call'],
+  overwhelm: ['output', 'pace', 'load'],
+  stress: ['pace', 'recovery', 'call'],
+  slow: ['review', 'upstream', 'decision', 'dependencies', 'wait'],
+  wait: ['review', 'upstream', 'decision', 'dependencies'],
+  bottleneck: ['review', 'upstream', 'stage', 'concentrated'],
+  doc: ['written', 'knowledge', 'context'],
+  documentation: ['written', 'knowledge', 'context'],
+  silo: ['concentrated', 'solo', 'visibility', 'interface'],
+  bug: ['review', 'reliability', 'verifying', 'incidents'],
+  defect: ['review', 'reliability', 'verifying', 'incidents'],
+  quality: ['review', 'reliability', 'verifying', 'incoherent'],
+  security: ['review', 'verifying', 'agents'],
+  spec: ['intent', 'specs', 'goals'],
+  prompt: ['intent', 'specs', 'feedback', 'context'],
+  accountability: ['owner', 'ownership', 'accountable'],
+  responsible: ['owner', 'ownership', 'accountable'],
+  meeting: ['rituals', 'feedback', 'visibility'],
+  standup: ['rituals', 'visibility'],
+  retro: ['rituals', 'feedback'],
+  communication: ['visibility', 'feedback', 'trust', 'solo'],
+  manager: ['leader', 'decision'],
+  leadership: ['leader', 'decision', 'priorities'],
+  user: ['customers'],
+  metric: ['metric', 'instrumented', 'success'],
+  measure: ['metric', 'instrumented', 'success'],
+  cost: ['cost', 'output'],
+  token: ['cost', 'output'],
+  junior: ['juniors', 'learning', 'judgment'],
+  skill: ['learning', 'judgment', 'juniors'],
+  debt: ['codebase', 'debt'],
+  architecture: ['codebase', 'incoherent'],
+  trust: ['trust', 'reliable', 'defer'],
+};
+
 const stem = (w: string) => {
   const s = w.replace(/(ings?|ers?|ed|es|ly|s)$/, '');
   return s.length >= 3 ? s : w;
 };
-const words = (t: string) =>
+const tokens = (t: string) =>
   t
     .toLowerCase()
     .split(/[^a-z0-9]+/)
-    .filter((w) => w.length >= 3 && !STOP.has(w))
-    .map(stem);
+    .filter((w) => (w.length >= 3 || SHORT.has(w)) && !STOP.has(w));
+const words = (t: string) => tokens(t).map(stem);
 
 function byTime(a: { created_at: string; id: string }, b: { created_at: string; id: string }) {
   return a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id);
