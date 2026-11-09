@@ -110,7 +110,7 @@ function renderSide() {
   const side = $('[data-side]');
   if (!filter.section) {
     side.innerHTML = `
-      <p class="side-intro">Each section lists where flow gets stuck, the root causes, and <strong>People</strong>, <strong>Process</strong> and <strong>Tech</strong> remediations.</p>
+      <p class="side-intro">Each section lists the signals to watch, the root causes behind them, and <strong>People</strong>, <strong>Process</strong> and <strong>Tech</strong> remediations.</p>
       <ul class="sec-list">${store.sections
         .map((s) => `<li><button type="button" data-filter="${s.id}"><span class="letter">${s.id}</span>${esc(s.name)}</button></li>`)
         .join('')}</ul>`;
@@ -185,8 +185,15 @@ function toast(msg: string) {
   toastTimer = window.setTimeout(() => t.classList.remove('show'), 3500);
 }
 
-const scrollOpts = (): ScrollIntoViewOptions => ({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'center' });
 const itemEl = (id: string) => document.querySelector<HTMLElement>(`[data-item="${CSS.escape(id)}"]`);
+
+/** Scroll so an item's top sits just below the sticky controls and table header. */
+function scrollToItem(el: HTMLElement | null) {
+  if (!el) return;
+  const covered = $('[data-controls]').offsetHeight + (document.querySelector<HTMLElement>('.lib thead')?.offsetHeight ?? 0);
+  const top = el.getBoundingClientRect().top + window.scrollY - covered - 8;
+  window.scrollTo({ top, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+}
 
 /** Make a signal visible (clearing filters if needed) and bring it into view. */
 function gotoMetric(id: string) {
@@ -205,7 +212,7 @@ function gotoMetric(id: string) {
     setFilter(filter.section && filter.section !== m.section ? m.section : filter.section);
   }
   const el = itemEl(id);
-  el?.scrollIntoView(scrollOpts());
+  scrollToItem(el);
   el?.classList.remove('is-target');
   void el?.offsetWidth;
   el?.classList.add('is-target');
@@ -235,7 +242,7 @@ function revealNew(r: SubmitResult) {
     $<HTMLInputElement>('[data-search]').value = '';
     setFilter(metricId ? (store.metrics.get(metricId)?.section ?? null) : null);
   }
-  if (targetId) itemEl(targetId)?.scrollIntoView(scrollOpts());
+  if (targetId) scrollToItem(itemEl(targetId));
   toast('Thanks! Your idea is live for everyone.');
 }
 

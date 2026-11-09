@@ -10,7 +10,7 @@
       "output": "The work moving along the edges.",
       "flow": "What reaches the sink."
     },
-    "library_note": "These are my best guesses, not a complete list. Add a stuck point, a root cause or a fix. It shows up for everyone right away. Let's see what we can uncover as a collective.",
+    "library_note": "These are my best guesses, not a complete list. Add a signal, a root cause or a fix. It shows up for everyone right away. Let's see what we can uncover as a collective.",
     "key_line": "Output is the work moving along the edges. Flow is what reaches the sink.",
     "lenses": {
       "people": "Skills, roles, capacity, relationships",
