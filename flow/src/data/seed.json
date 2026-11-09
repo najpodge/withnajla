@@ -178,7 +178,7 @@
         "Decision rights unclear or centralized",
         "Low trust: hard to admit “I don't understand this”",
         "Teams count output, not the full cost of producing it",
-        "Activity rewarded over outcomes"
+        "Output rewarded over flow"
       ]
     },
     {
@@ -194,7 +194,7 @@
         "Decision rights unclear or centralized",
         "Ownership concentrated in one person",
         "Upstream sped up, downstream didn't",
-        "Activity rewarded over outcomes"
+        "Output rewarded over flow"
       ]
     },
     {
@@ -365,7 +365,7 @@
         "Agents given open-ended goals",
         "Priorities are unclear",
         "Teams count output, not the full cost of producing it",
-        "Activity rewarded over outcomes"
+        "Output rewarded over flow"
       ]
     },
     {
@@ -716,10 +716,10 @@
       "section": "F",
       "arrow": "up",
       "name": "Share of work tied to outcomes",
-      "looks_like": "Activity is celebrated while outcomes stay flat",
+      "looks_like": "Output is celebrated while flow stays flat",
       "on_deck": false,
       "root_causes": [
-        "Activity rewarded over outcomes",
+        "Output rewarded over flow",
         "Priorities are unclear",
         "Teams count output, not the full cost of producing it",
         "No success metric defined before building",
@@ -734,7 +734,7 @@
       "on_deck": true,
       "root_causes": [
         "No success metric defined before building",
-        "Activity rewarded over outcomes",
+        "Output rewarded over flow",
         "Engineers far from customers",
         "Features not instrumented",
         "Priorities are unclear",
@@ -800,7 +800,7 @@
         },
         {
           "lens": "process",
-          "text": "Risk-tiered review: agents review agent PRs, humans review what gets escalated"
+          "text": "Review by risk: humans fully review high-risk agent PRs and spot-check the rest"
         },
         {
           "lens": "tech",
@@ -1610,7 +1610,7 @@
       "theme": "Collaboration and feedback"
     },
     {
-      "text": "Activity rewarded over outcomes",
+      "text": "Output rewarded over flow",
       "remediations": [
         {
           "lens": "people",

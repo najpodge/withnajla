@@ -68,11 +68,11 @@ function renderStatic() {
       <h2>${esc(ex.title.replace(/^Example:\s*/, '').replace(/^./, (c) => c.toUpperCase()))}</h2>
       <p class="example-setup">${esc(ex.setup)}</p>
       <dl class="example-grid">
-        <div class="ex-signals"><dt>Signals</dt><dd>${esc(ex.signal)}</dd></div>
+        <div class="ex-signals"><dt>Signal</dt><dd>${esc(ex.signal)}</dd></div>
+        <div><dt>Where it shows up</dt><dd class="with-letter">${sec(ex.shows_up_section)}<span>${esc(ex.shows_up)}</span></dd></div>
         <div><dt>5 whys</dt><dd><ol class="whys">${ex.five_whys
           .map(([q, a]) => `<li><strong>${esc(q)}</strong> ${esc(a)}</li>`)
           .join('')}</ol></dd></div>
-        <div><dt>Where it shows up</dt><dd class="with-letter">${sec(ex.shows_up_section)}<span>${esc(ex.shows_up)}</span></dd></div>
         <div><dt>Root cause</dt><dd>${esc(ex.root_cause)}</dd></div>
         <div><dt>Remediation</dt><dd><div class="fixes">${LENSES.map(
           (l) => `<div><span class="tag tag-${l}">${LENS_LABEL[l]}</span><span>${esc(ex.fixes[l])}</span></div>`,
